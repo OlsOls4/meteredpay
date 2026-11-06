@@ -1,19 +1,20 @@
-# MeteredPay — 2-minute video script (REFRAMED, record NOW)
+# MeteredPay — 2-minute video script (REBUILT 6 Nov 2026)
 
-**Status: READY TO RECORD — record TONIGHT, 5 Nov 2026, against the FROZEN
-contract `apathetic-party.testnet` only.** This reframe supersedes the
-12–13 Nov draft (Council review wave 3, 5 Nov 2026: V-REFRAME, V-E1–E-6,
-R3, N1, R1). Do NOT record from the old draft (hook 204 wpm, cost-zero
-slogan, link-in-the-repo line, unfilmable deposit button). Source: council review
-wave 3 §4 + §6 + §7 (Videographers) and the devpost-demo-video skill.
-Supersedes `prep/03 §3` and `prep/10 §1` (their success → fail → refusal
-order is arithmetically unrecordable).
+**Status: REBUILT — 6 Nov 2026, council video-rebuild.** Olly's verdict on
+the 5 Nov cut: "It's rubbish and the narration is robotic." This rebuild
+supersedes the 5 Nov script below in full for narration, beats, captions,
+chyron, close, and thumbnail. Same recorded run (buyer
+`mp-video05.testnet`, 5 Nov 2026; tamper beat buyer `mp-tamper05.testnet`,
+same session, same frozen contract `apathetic-party.testnet`) — NO new
+recorded run, no new chain activity. Build: `video/work/assemble-v2.py`
+(narration `video/work/narr2/`, Helio voice; frames `video/work/frames/`,
+re-shoots `video/work/shoot9.mjs` + `shoot9b.mjs`).
 
 **Core message (one sentence):** An agent pays 0.1 testnet NEAR for one
 document check — but only if the check comes back valid; a failed check
 deducts nothing, and overspending is refused on-chain.
 
-## Arithmetic check (read first)
+## Arithmetic check (read first — unchanged from 5 Nov)
 
 Cap 0.2 testnet NEAR, price 0.1 per call. After success #1, spent is
 0.1 and remaining budget is 0.1 — exactly one more call's price — so a
@@ -27,32 +28,22 @@ available 0.3 / cap 0.2.
 **Tamper beat accounting:** the tamper beat is NOT part of the main run's
 arithmetic. It is filmed in the same recording session as a separate
 single-mode run on the same frozen contract (its own buyer, its own
-0.5 deposit, spent 0 — prior evidence: run `single-tamper89`,
-call `tamper-single-001`, release tx `8W7EQs94SoFk9JvvYaJ2nvewqRDq2NNYWbaSwNtu5DxS`,
-used here as evidence only, NEVER as footage). Its frames are labelled
-on screen "Separate run — same contract" and its hashes are marked
-`[FROM TAMPER RUN]`, never mixed into the main run's sequence. Demo mode
-(`buyer.mjs --mode demo`) has no tamper step and there is no
-`--scenario tamper` — the video team must reproduce the tampered-receipt
-method in the session; if it cannot be reproduced, CUT the beat and give
-its 7 s back to the close (close becomes 27 s) — do not fake it, do not
-reuse the 5 Nov frames.
+0.5 deposit, spent 0). Its frames are labelled on screen "Separate run
+— same contract" and its hashes are marked `[FROM TAMPER RUN]`, never
+mixed into the main run's sequence.
 
-## Recording rules (binding)
+## Recording rules (binding — unchanged from 5 Nov unless noted)
 
 - **One run, one buyer (main run).** Every hash, balance, and explorer
   frame in the main run comes from the SINGLE recorded run's own buyer.
   Never paste hashes from the 5 Nov run logs (or any other run) into
-  frames — that is editing two runs together and is forbidden. Where
-  this script was written before the run exists, hashes are marked
-  `[FROM RECORDED RUN]`. The tamper beat is the sole labelled exception
-  (separate run, `[FROM TAMPER RUN]`, on-screen label).
+  frames — that is editing two runs together and is forbidden. The
+  tamper beat is the sole labelled exception (separate run,
+  `[FROM TAMPER RUN]`, on-screen label).
 - **"Deducted: zero", never the old cost-zero slogan.** Every call costs testnet gas
   (~0.001–0.01 NEAR/call), so "failed calls cost zero" is FALSE at wallet
   level. Everywhere customer-facing — cold open, end card, narration,
-  captions — say "Deducted: zero". The only gas mention is the honest
-  small print: "Contract balances — wallet differs by testnet gas, shown
-  on explorer".
+  captions — say "Deducted: zero".
 - **"testnet" on every money overlay.** Every amount on screen says
   "testnet NEAR". Every explorer cut keeps `testnet.nearblocks.io` in
   frame. No money shot without the testnet label.
@@ -62,22 +53,16 @@ reuse the 5 Nov frames.
   released. Deducted: 0 testnet NEAR."
 - **Show verification.** The success beats must show the receipt check
   (response hash recomputed + seller signature verified) before the
-  deduction transaction — zoomed terminal line, then dashboard log, then
-  explorer tx. Success #2 flashes the verification line for 2 s
-  ("verified again").
+  deduction transaction. REBUILT: a dedicated verification close-up card
+  shows recomputed hash = stated hash (`2edf3f35…f0124b`), the seller
+  pubkey, and "Signature: valid — only then does the contract deduct".
 - **Never film the 30 s live wait.** The timeout is a 5-second
-  settled-row beat (see 0:58–1:03 below), never a live 30-second wait.
-  A persistent chyron from 0:10 reads "Buyer waits 30 s for a receipt"
-  and stays up through the timeout beat.
-- **Chyron window — DECIDED 6 Nov 2026: 0:10–1:03 (restored).** Decided
-  by Olly-delegated Muse; the videographers' call (council wave 4,
-  V-F5), over the finish team's deliberate 0:10–0:30 cut (second pass,
-  commit `ee2f8fa`, "ends at 0:30 when the receipt has arrived"). The
-  timeout beat is the payoff the chyron sets up, so it stays up through
-  1:03 and is gone from the tamper beat (1:03) onward. This script's
-  0:10–1:03 wording was correct all along; the 0:10–0:30 render was the
-  deviation, now corrected by re-render only (see `video/video-run-log.md`,
-  "Chyron restore" section).
+  settled-row beat, never a live 30-second wait.
+- **Chyron window — 0:10–1:03 (restored 6 Nov, DECIDED).** The text now
+  CHANGES as the story advances (was one fixed line): 0:10–0:30 "Buyer
+  waits 30 s for a receipt"; 0:30–0:58 "Receipt checked before payment";
+  0:58–1:03 "No receipt in 30 s — money back". Pill inset 40 px from the
+  image edge (was flush). Gone from the tamper beat (1:03) onward.
 - **Positioning — what the narration must NEVER claim (R1).** Do not say
   "x402 pays before delivery", "no success condition", or "no refund"
   about x402: its `exact` `authorization` flow settles only after the
@@ -88,26 +73,41 @@ reuse the 5 Nov frames.
   buyer-claimed release + 600 s backstop + dispute-audit view — the
   guarantee lives in a NEAR contract the payer can verify and replay.
 - **Every shot names its surface.** Each row below names the dashboard
-  view (S1/S2/S5) or the terminal command. No shot assumes a button that
+  view (S1/S2/S3) or the terminal command. No shot assumes a button that
   does not exist: there is NO deposit button and NO fresh-deposit button
-  anywhere (S1/S5 have none; S2 has exactly two buttons — "Load balance
-  & call history" and "Show the 30-second wait" — and the dashboard is
-  deliberately read-only, so do NOT add one). Deposit is filmed in the
-  terminal (`node buyer/buyer.mjs --mode demo`) and confirmed on S2.
-- **Thumbnail frame:** the cold-open frame (0:00–0:05, settled REFUNDED
-  row, "Failed call. Deducted: zero."), composed per the prep/01
-  thumbnail spec (1200 × 675: three-row proof strip Deducted / Refunded /
-  Refused + logo + "NEAR testnet demo — no mainnet money. Built at NEAR
-  HACKATHON."). Test-render the thumbnail at ~500 px and check the rows
-  stay legible before the full take.
+  anywhere. Deposit is filmed in the terminal
+  (`node buyer/buyer.mjs --mode demo`) and confirmed on S2.
+- **Captions — CHANGED 6 Nov: sidecar .srt ONLY, no burned captions.**
+  The 5 Nov burned captions cut mid-sentence and triple-repeated the
+  narration. The .srt is sentence-level (39 cues 2:00, 8 cues teaser),
+  timings from the actual narration placements. The headline + one
+  supporting line in the top band are titles, not captions.
+- **Motion — NEW 6 Nov.** Slow Ken Burns zoom (1.0 → 1.08; 1.12 on the
+  11 s+ holds) on every still. No framing held >6 s without a reframe.
+  Max silence gap 2.28 s (cold-open → job boundary); all other gaps
+  ≤2.07 s; the rest is natural inter-sentence pauses.
+- **Narration — CHANGED 6 Nov: Helio voice.** `avocado_v2:MAI_03` via
+  `/opt/hatch/bin/tts`, speed 85, one clip per sentence, placed across
+  each beat. NEVER sped up to fit — clip durations fit the speech.
+  Measured wpm (speech time only): hook 76, job 157, deposit 157,
+  success #1 143, fail 122, timeout 149, tamper 136, success #2 152,
+  refusal 126, close 159. The old ≤145 wpm cap was a gTTS-era rule for a
+  robotic voice; it does not apply to a natural voice — the test is
+  whether it sounds rushed (fresh panel verdict, see
+  `hidden_files/council-review-video-rebuild-2026-11-06.md` §7).
+- **Thumbnail — CHANGED 6 Nov (v2).** Big "MeteredPay" + three large
+  rows (SUCCESS — deducted 0.1 testnet NEAR / FAILED — deducted zero /
+  OVER BUDGET — refused on-chain) + "NEAR testnet demo — no mainnet
+  money." Every word legible at 320 px wide (verified).
+- **Backstop line — SOFTENED 6 Nov.** "Backstop: 600 s — buyer can
+  reclaim after expiry." The old "can always reclaim" was unproven (no
+  backstop reclaim was ever executed).
 - **Video length:** no duration cap was found in the live HACKATHON.md
   (re-read 5 Nov 2026, 477 lines). 2:00 is the team's own target.
-- 1920×1080, MP4 H.264/AAC, 30 fps, open captions burned in (≤2 lines,
-  sidecar + transcript kept in the repo), "testnet" survives in every
-  money sentence of the captions. Browser zoom from test frames starting
-  150%, cursor visible and slow, no music, no stock audio. No secrets on
-  screen. No claim spoken that is not also visible or linked. No editing
-  two runs together (except the labelled tamper beat, above).
+- 1920×1080, MP4 H.264/AAC, 30 fps, no music, no stock audio. No
+  secrets on screen. No claim spoken that is not also visible or
+  linked. No editing two runs together (except the labelled tamper
+  beat, above).
 
 ## Test-frame gate (BEFORE the full take — E-6)
 
@@ -124,44 +124,36 @@ failed frame re-stages the shot, never narrates over an illegible number:
    for a check only if it passes; a failed check deducts nothing;
    overspending is refused."
 
-## 2:00 script
+## 2:00 script (REBUILT 6 Nov 2026)
 
 | Time | Shot (surface named) | On-screen text / narration |
 |---|---|---|
-| 0:00–0:05 (5 s) | **Cold open:** S1 dashboard, already-settled REFUNDED row. | **"Failed call. Deducted: zero."** (on screen + spoken, 4 words, 48 wpm) |
-| 0:05–0:15 (10 s) | **The job:** S1 dashboard, seeded demo document visible; small print "Demonstrator service — seeded demo document". Persistent chyron appears at 0:10: "Buyer waits 30 s for a receipt". | Narration (23 words, **138 wpm** — 11 words in the first 5 s, 12 in the second; the 5 s boundary falls mid-sentence after "It"): "An agent needs one document checked before it files it. It pays 0.1 testnet NEAR — but only if the check comes back valid." |
-| 0:15–0:25 (10 s) | **Deposit + cap:** terminal `node buyer/buyer.mjs --mode demo` (deposit + set_budget_cap lines), then S2 "Load balance & call history" button click showing balance. Small print: "Contract balances — wallet differs by testnet gas, shown on explorer." | **"Deposit: 0.5 testnet NEAR — Budget: 0.2 testnet NEAR"** Narration (13 words, 78 wpm): "The buyer prepays testnet NEAR and sets a spending limit in the contract." |
-| 0:25–0:38 (13 s) | **Success #1 (verification split):** 0:25–0:30 zoomed terminal line "verified: response hash matches, seller attestation valid" (`buyer.mjs` L306); 0:30–0:34 S1/S2 dashboard log SUCCESS, balance drops by 0.1; 0:34–0:38 explorer deduction tx `[FROM RECORDED RUN]`. | **"Successful call: −0.1 testnet NEAR"** Narration (18 words, 83 wpm): "One successful call. The contract deducts exactly one call price — only because the buyer verified the success receipt." |
-| 0:38–0:58 (20 s) | **Fail:** terminal `buyer.mjs --mode demo` fail step; S1/S2 dashboard log REFUNDED, balance unchanged; failure-claim tx shown `[FROM RECORDED RUN]`. | **"Failed call: held amount released. Deducted: 0 testnet NEAR."** Narration (16 words, 48 wpm): "Now a failed call. The buyer claims the failure — the held 0.1 is released, never deducted." |
-| 0:58–1:03 (5 s) | **Timeout beat (settled row, 5 s):** S2 dashboard timeout row already settled; timeout-claim tx shown `[FROM RECORDED RUN]`; caption "Buyer claimed timeout — held amount released". Chyron "Buyer waits 30 s for a receipt" still up. | **"No receipt in 30 s: held amount released. Deducted: 0 testnet NEAR."** Narration (9 words, 108 wpm): "No receipt in thirty seconds — same release, never deducted." (Do NOT film the live 30-second wait.) |
-| 1:03–1:10 (7 s) | **Tampered receipt (R3, separate run):** terminal verification-failure line ("response hash mismatch" / "seller signature FAILED verification"); failure-claim tx `[FROM TAMPER RUN]`; S2 row failed-refunded. On-screen label throughout: "Separate run — same contract". | **"Receipt didn't check out. Deducted: 0 testnet NEAR."** Narration (9 words, 77 wpm): "The receipt didn't check out, so nothing was deducted." |
-| 1:10–1:20 (10 s) | **Success #2 (fast, same shots as #1):** terminal verification line flashes 2 s ("verified again"); S1/S2 dashboard log SUCCESS; explorer deduction tx `[FROM RECORDED RUN]`. | **"Second call: −0.1 testnet NEAR. Budget now used."** Narration (5 words, 30 wpm): "Second call, budget now used." |
-| 1:20–1:40 (20 s) | **Refusal:** terminal `buyer.mjs --mode demo` past the budget; S1/S2 dashboard log REFUSED, reason `over_budget` verbatim, balance unchanged; refusal tx on explorer, reason `over_budget` legible `[FROM RECORDED RUN]`. | **"Over budget: refused on-chain. Balance unchanged."** Narration (19 words, 57 wpm): "And over budget, the contract refuses the call before any money moves. The contract logged the refusal; balance unchanged." |
-| 1:40–2:00 (20 s) | **Close:** S5 dispute-audit view (the four outcomes + receipt links); S1 replay steps; contract ID in full; end card held 3 s. | **"Replay it yourself — same contract: apathetic-party.testnet"** + end card **"MeteredPay — Failed call? Deducted: zero. NEAR testnet. Built at NEAR HACKATHON. Repo in the replies."** Narration (31 words, 93 wpm): "The contract holds the deposit and refuses overspending on-chain. Would you trust an agent that only pays for work it can prove? Replay it — repo in the replies — and tell us." |
+| 0:00–0:05 (5 s) | **Cold open:** S1 three-card summary (Succeeded / Failed / Refused). No disclosure overlay — disclosure moved to the end card. | Headline **"Failed call. Deducted: zero."** Narration (4 words): "Failed call. Deducted: zero." |
+| 0:05–0:16.5 (11.5 s) | **The job:** de-spoiled document card (document + input SHA-256 only — the verdict and deduction tx are REMOVED; they gave away the payoff). Chyron appears at 0:10: "Buyer waits 30 s for a receipt". | Headline "One document to check." Caption "Paid only if the check comes back valid." Narration (28 words): "Agents pay for every call, even the broken ones. This agent needs one document checked before it files it. It pays only if the check comes back valid." |
+| 0:16.5–0:27 (10.5 s) | **Deposit + cap:** trimmed terminal frame (verbatim balance-after lines + deposit/cap txs, JSON dropped), then S2 deposit-time balances. Footline: "Testnet only — no mainnet money." | Headline "Deposit 0.5. Cap 0.2." Caption "The contract holds the deposit. It cannot spend past the cap." Narration (25 words): "It puts down zero point five testnet NEAR, and sets a limit: no more than zero point two. Whatever happens, it can't spend past that." |
+| 0:27–0:45 (18 s) | **Success #1:** trimmed terminal (verified line + deduction tx `FdAowPRk…` + balance after) 4 s → verification close-up card 5 s (recomputed hash = stated hash, seller pubkey, "Signature: valid") → guided success card 4 s → S3 receipt 5 s (complete at 100% zoom). Chyron switches at 0:30 to "Receipt checked before payment". URL pill on the S3 cut: deduction tx. | Headline "Check the receipt first." Caption "Same fingerprint. Real signature. Then the contract pays." Narration (37 words): "First call. The check comes back valid. The buyer checks the receipt. Same fingerprint, real signature. And only then does the contract take zero point one. That's the whole trick: the buyer checks, then the contract pays." |
+| 0:45–1:01 (16 s) | **Fail:** trimmed terminal (seller-error attestation + release tx `7j4Jijr9…` + balance after) 5 s → guided fail card 11 s (no "N of N", Next button reads "Next: see the failed (timeout) call", balance after is this call's 0.5/0/0.1/0.4/0.2). Chyron switches at 0:58 to "No receipt in 30 s — money back". URL pill on the terminal cut: release tx. | Headline "Failed call. Money back." Caption "Held, never taken. Deducted: zero." Narration (25 words): "Now a call fails. The buyer says so, and the money comes back. Held, never taken. Deducted: zero. The seller's own error note proves it failed." |
+| 1:01–1:06 (5 s) | **Timeout beat (settled row, 5 s):** guided timeout card (balance after 0.5/0/0.1/0.4/0.2; Next button "Next: see the refused call"). Chyron "No receipt in 30 s — money back" to 1:03, then gone. (Do NOT film the live 30-second wait.) | Headline "No answer in 30 seconds." Caption "Same deal — the money comes back." Narration (11 words): "No answer in thirty seconds? Same deal. The money comes back." |
+| 1:06–1:14 (8 s) | **Tampered receipt (R3, separate run):** highlight card 5 s (recomputed `db62657b…` vs stated `0b62657b…`, the single flipped first hex char in red + underlined; "They do NOT match — failure claim: invalid_response"; "Deducted: 0 testnet NEAR"; release tx `7rEaW3An…`) → S2-tamper 3 s. On-screen label throughout: "Separate run — same contract". URL pill on the highlight card: release tx. | Headline "One letter changed." Caption "The buyer catches it. Pays nothing." Narration (16 words): "Someone fiddled with the receipt. See that one letter? The buyer catches it, and pays nothing." |
+| 1:14–1:24 (10 s) | **Success #2:** trimmed terminal (verified line + deduction tx `FiHaJ9uv…` + balance after 0.5/0/0.2/0.3/0.2) 3 s → S3 receipt 7 s. URL pill on the S3 cut: deduction tx. | Headline "Second good check." Caption "That is the limit reached." Narration (18 words): "Second good check. That's the limit reached. Two good checks, zero point two spent. The budget is gone." |
+| 1:24–1:40 (16 s) | **Refusal:** trimmed terminal (`refused: video05-overbudget-001 reason=over_budget (verbatim), balances unchanged` + refusal tx `8sPCKFBt…` + balance after) 5 s → guided refusal card 5.5 s (only button: "Finish — replay it yourself on S5") → S3 receipt 5.5 s (complete at 100% zoom). Footline on the S3 cut: "Backstop: 600 s — buyer can reclaim after expiry." URL pill: refusal tx. | Headline "Over budget — refused." Caption "Before any money moves. Balance untouched." Narration (26 words): "One more call, and the contract says no before any money moves. Over budget, refused, on the record. Balance untouched. That's the limit doing its job." |
+| 1:40–2:00 (20 s) | **Close (REBUILT — S5 audit table OUT):** S1 three-card summary 7 s → replay block 6 s (repo URL + seller-first + buyer command + prerequisites + expected finish 0.5/0/0.2/0.3/0.2) → end card 7 s (name + "Failed call? Deducted: zero." + repo + contract + disclosure: "Rendered dashboard frames with narration — not a live screen recording. Deposit frame rebuilt from the run log; demo outcomes chosen by the seller's scenario switch."). | Headline (three-card only): "Three calls, three answers." Narration (16 + 8 + 5 words): "The buyer checks every receipt. The contract only pays on a receipt the buyer has signed." / "Replay it yourself. The link's in the replies." / "MeteredPay. Failed call? Deducted: zero." |
 
-**Timing arithmetic:** 5 + 10 + 10 + 13 + 20 + 5 + 7 + 10 + 20 + 20 = **120 seconds**.
-Steals, per wave 3: hook 5 s → 10 s (5 s stolen from the close, 25 s → 20 s);
-tamper beat 7 s (5–8 s range) = 5 s from the deposit beat (15 s → 10 s) +
-2 s from the refusal beat (22 s → 20 s). Close stays 20 s; no beat is cut.
-
-**Hook wpm check (E-1):** hook narration is 23 words over 10 s = **138 wpm**
-(≤145). First 5 s: 11 words ("An agent needs one document checked
-before it files it. It") = 132 wpm; second 5 s: 12 words ("pays 0.1
-testnet NEAR — but only if the check comes back valid") = 144 wpm.
-No 5 s window exceeds 12 words. No other beat exceeds 108 wpm.
+**Timing arithmetic:** 5 + 11.5 + 10.5 + 18 + 16 + 5 + 8 + 10 + 16 + 20 = **120 seconds**.
 
 ## 30-second cut (teaser only — attach the 2:00 to X)
 
 Same recorded main run only; the tamper beat is NOT in the teaser. Never
-presented as a complete run — the 2:00 is the complete run.
+presented as a complete run — the 2:00 is the complete run. Rebuilt from
+the same new assets (Helio narration, new frames).
 
-| Time | Shot | On-screen text |
+| Time | Shot | On-screen text / narration |
 |---|---|---|
-| 0:00–0:06 | Fail cold open (same REFUNDED row as 0:00–0:05 of the 2:00). | **"Failed call. Deducted: zero."** |
-| 0:06–0:12 | The job (same shot as 0:05–0:15 of the 2:00, trimmed). | **"One document checked — paid only if valid."** |
-| 0:12–0:20 | Success #1 (same shot as 0:25–0:38 of the 2:00, trimmed; verification line flashed). | **"Successful call: −0.1 testnet NEAR"** |
-| 0:20–0:26 | Refusal (same shot as 1:20–1:40 of the 2:00, trimmed; the refusal tx is the recorded run's real refusal, after success #2). | **"Over budget: refused on-chain. Balance unchanged."** |
-| 0:26–0:30 | End card: contract ID only. | **"MeteredPay — apathetic-party.testnet — NEAR testnet"** (repo in the replies, not in the 30 s frame) |
+| 0:00–0:05 | Cold open (three-card summary). | **"Failed call. Deducted: zero."** Narration: "Failed call. Deducted: zero." |
+| 0:05–0:13 | The job (de-spoiled document card). | "One document to check." / "Paid only if the check comes back valid." Narration: "Agents pay for every call, even the broken ones. It pays only if the check comes back valid." |
+| 0:13–0:22 | Verification close-up card. | "Check the receipt first." / "Same fingerprint. Real signature. Then the contract pays." Narration: "The buyer checks the receipt. Same fingerprint, real signature. Then the contract pays." |
+| 0:22–0:28 | Refusal (guided refusal card). | "Over budget — refused." / "Before any money moves. Balance untouched." Narration: "One more call, and the contract says no before any money moves." |
+| 0:28–0:30 | End card (2 s clip; measured silent tail ~3.5 s from 26.57 — last narration ends 26.96). | "MeteredPay — Failed call? Deducted: zero." No narration. |
 
 Honesty note for the cut: it is a teaser edit of the same recorded
 run, not a standalone replay — the refusal it shows is the run's real
@@ -186,4 +178,8 @@ be presented as a complete run; the 2:00 is the complete run.
   captions, or on-screen text; any link-in-the-repo wording; any
   refusal reason other than `over_budget` verbatim.
 - A tamper beat that cannot be reproduced in the session: cut it, give
-  its 7 s to the close — never fake it, never reuse 5 Nov frames.
+  its 8 s to the close — never fake it, never reuse 5 Nov frames.
+- If the best TTS still sounds robotic: Olly recording the voiceover
+  himself (~15 min, script above) is the one alternative — deliver the
+  best TTS version first so he can hear the difference (decision
+  recorded 6 Nov 2026, video rebuild).

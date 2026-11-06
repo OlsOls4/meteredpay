@@ -1,16 +1,32 @@
 1
-00:00:00,400 --> 00:00:04,100
-Failed call. Deducted: zero testnet NEAR.
+00:00:00,600 --> 00:00:02,170
+Failed call.
 
 2
-00:00:06,400 --> 00:00:10,740
-One document checked on testnet. Deducted only if valid.
+00:00:02,170 --> 00:00:03,740
+Deducted: zero.
 
 3
-00:00:12,400 --> 00:00:16,580
-Successful call. Minus 0.1 testnet NEAR.
+00:00:05,500 --> 00:00:08,860
+Agents pay for every call, even the broken ones.
 
 4
-00:00:20,400 --> 00:00:24,610
-Over budget. Refused on-chain. Balance unchanged.
+00:00:08,860 --> 00:00:12,220
+It pays only if the check comes back valid.
+
+5
+00:00:13,500 --> 00:00:16,100
+The buyer checks the receipt.
+
+6
+00:00:16,100 --> 00:00:18,190
+Same fingerprint, real signature.
+
+7
+00:00:18,190 --> 00:00:20,270
+Then the contract pays.
+
+8
+00:00:22,400 --> 00:00:26,960
+One more call, and the contract says no before any money moves.
 

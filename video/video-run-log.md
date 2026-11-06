@@ -574,3 +574,134 @@ Test-frame gate (re-run on the chyron-restore render — frames in
 - No cross-run hash: no input, frame, or overlay changed — all hashes
   are from the video05 run or the labelled tamper05 separate run, as
   verified for the Wave-4 render.
+
+## REBUILD (6 Nov 2026, ~13:00–14:00 UTC) — council video-rebuild, Olly: "rubbish, narration robotic"
+
+Same recorded run (mp-video05.testnet + tamper mp-tamper05.testnet), no new
+run, no new chain activity. Build: `video/work/assemble-v2.py` (frames
+`video/work/render-cards-v2.py`, re-shoots `video/work/shoot9.mjs` +
+`shoot9b.mjs`, narration `video/work/narr2/synthesize.sh`).
+Full council synthesis:
+`~/workspace/goals/win-cash-with-meteredpay-at-near-hackathon/hidden_files/council-review-video-rebuild-2026-11-06.md`;
+rebuild log:
+`~/workspace/goals/win-cash-with-meteredpay-at-near-hackathon/hidden_files/video-rebuild-log-2026-11-06.md`.
+
+Outputs (this render):
+- 2-min `meteredpay-demo-2min.mp4` — 120.02 s, 1920×1080, h264+aac, 30 fps,
+  28,064,084 bytes, sha256
+  `6ed84e034f38c106a67b034da97736bf712191134f7ca20219325e8de680066b`.
+- Teaser `meteredpay-teaser-30s.mp4` — 30.02 s, 6,797,130 bytes, sha256
+  `4a67fd85a6861e53b0e27091962f036df4aa91d9c6168a86d62f9c2fe7b92078`.
+- SRT sidecars regenerated (2:00: 39 cues; teaser: 8 cues), sentence-level,
+  timings from the actual narration placements; transcript regenerated.
+- Thumbnail v2 `meteredpay-thumbnail-1200x675.png` — 43,331 bytes, sha256
+  `67b58876c90ab8f4c427661c1ed127b5e55caf2dd066b5385dd98567c6fb036a`
+  (big title + three rows, every word legible at 320 px; old thumbnail
+  backed up outside the repo at `/tmp/mp-old-thumbnail.png`).
+- Previous render backed up outside the repo: `/tmp/mp-old-2min.mp4`,
+  `/tmp/mp-old-teaser.mp4`.
+
+What changed (all panel-driven; see synthesis §6):
+- Narration: Helio (`avocado_v2:MAI_03`, `/opt/hatch/bin/tts`, speed 85),
+  one clip per sentence, placed across each beat; NEVER sped up to fit.
+  New plain-language script (219 words, hook in first 10 s, one journey,
+  how-it-works in the close, name + "Failed call? Deducted: zero.").
+  Measured wpm (speech only): 76–159 by beat.
+- Motion: slow Ken Burns zoom (1.0→1.08, 1.12 on 11 s+ holds) on every
+  still. Pixel-diff 2 s apart inside a clip: 7.4% changed (old: 0.008).
+- NO burned captions (sidecar .srt only). Headline + one supporting line
+  in the top band are titles, not captions.
+- Cold open: S1 three-card summary (was the REFUNDED row only).
+- Document card de-spoiled (verdict + deduction tx removed).
+- NEW verification close-up card (recomputed hash = stated hash
+  `2edf3f35…f0124b`, seller pubkey, "Signature: valid").
+- NEW tamper highlight card (flipped first hex char `d` vs `0` in red +
+  underlined; "They do NOT match — failure claim: invalid_response").
+- Terminal frames trimmed: verbatim console lines + one-line tx
+  summaries carrying the same hashes/balances; JSON objects dropped
+  (values unchanged, layout changed — documented in the rebuild log).
+- Guided frames re-shot (video-copy dash only): guided order now
+  success → fail → timeout → refusal; no "N of N" progress; Next labels
+  correct ("Next: see the failed (timeout) call", "Next: see the refused
+  call"); no footer leak (playback-note hidden in the video copy);
+  "Name tentative" span removed from video frames only. Live dashboard
+  untouched.
+- S3 receipts re-shot at 100% zoom, complete (last line no longer cut);
+  "Balance before" dropped in the video copy only (balance-after stays).
+  Refusal frame re-shot twice: first pass caught the dashboard header
+  (shorter receipt cannot scroll it out); fixed by hiding the header/nav
+  for that shot only (`hide-chrome` in the video copy) — receipt
+  content unchanged.
+- Chyron 0:10–1:03 (restored window kept) with text changing as the story
+  advances: 0:10–0:30 "Buyer waits 30 s for a receipt"; 0:30–0:58
+  "Receipt checked before payment"; 0:58–1:03 "No receipt in 30 s —
+  money back". Pill inset 40 px from the image edge (was flush).
+  CORRECTION (fresh panel, 6 Nov ~13:17): the pill is ABSENT ~0:27–0:30
+  over the success-#1 terminal cut (chyron set to start at 0:30), and
+  the third text appears ~3 s early (0:58–1:01, over the fail card);
+  the pill also collides with the S1 "Receipt" header / S2-S3 footer
+  text at 0:24, 0:38, 0:42, 0:52, 0:55, 1:00, 1:02. One-line re-render
+  fix exists (c04a chyron `[(0,3,CH_WAIT),(3,4,CH_CHECK)]`); not done —
+  the panel verified hash `6ed84e03…` and a re-render would invalidate
+  that verification. Parent's call whether to re-render before posting.
+- Close rebuilt: three-card summary → replay block (copy-pasteable:
+  repo URL, seller first, buyer command, prerequisites, expected finish
+  0.5/0/0.2/0.3/0.2) → end card. S5 audit table OUT. Disclosure moved
+  to the end card (extended: rendered frames, deposit-frame
+  reconstruction, scenario control). Backstop softened: "Backstop: 600 s
+  — buyer can reclaim after expiry."
+- L1 second seller NOT in the video (arc is the single-contract proof;
+  L1 lives in the README appendix + submission idea).
+
+Verification (this render — see rebuild log for the full gate):
+- ffprobe: 120.02 s / 30.02 s, 1920×1080, h264 + aac. Test-frame gate:
+  frames at 0:02/0:07/0:12/0:19/0:24/0:29/0:33/0:38/0:42/0:47/0:55/1:00/
+  1:02/1:04/1:08/1:12/1:17/1:20/1:26/1:32/1:37/1:44/1:50/1:57 inspected;
+  chyron present 0:10–1:03 with the right text at each switch, absent
+  before 0:10 and after 1:03 — CORRECTED by the fresh panel: the pill is
+  ABSENT ~0:27–0:30 (see the chyron correction above); every amount
+  legible with "testnet NEAR"; refusal reason `over_budget` verbatim;
+  no "cost zero" wording.
+- Audio: `silencedetect` (−50 dB, d=0.5, audio stream mapped) — max
+  silence run 2.28 s (cold-open → job boundary, 3.38–5.65 s); all other
+  runs ≤2.07 s. 38 runs ≥0.5 s totalling 45.5 s below −50 dB — these are
+  natural inter-sentence pauses inside Helio's delivery (0.35–0.67 s
+  each) plus placement gaps, NOT dead air: the old cut's defining defect
+  was 12.4 s runs; the max run here is 2.28 s and every frame moves.
+- SRT: 39 + 8 cues, no empty cues, no overlaps, last cue ends 118.45 s
+  (2:00) / 26.96 s (teaser; the t05 clip is 2 s but the measured silent
+  tail is ~3.45 s, 26.57–30.03 — not the "deliberate 2 s" first claimed).
+- Claims: all tx hashes, response hashes, input SHA-256, seller pubkey,
+  and final balances re-checked against `demo-run-console.log`,
+  `tamper-run-console.log`, and the dash PLAYBACK data — all PASS.
+  Input SHA-256 `36ac8134…` is the seller-output hash from the PLAYBACK
+  data (same value the S3 receipt shows), not the raw document-text hash.
+- Dashboard verify still OK; `src/lib.rs` diff 0 (frozen contract
+  untouched); no new unverified claim; no video uploaded anywhere.
+
+Known minor defects (accepted, recorded — not re-rendered for):
+- Chyron hole 0:27–0:30 + third text ~3 s early (0:58–1:01, over the
+  fail card); pill collisions at 0:24, 0:38, 0:42, 0:52, 0:55, 1:00,
+  1:02 (guided-card "Receipt" header / S2-S3 footer text). One-line
+  re-render fix exists for the hole; not done (panel verified hash
+  `6ed84e03…`).
+- Max silence run 2.28 s, 0.28 s over the ≤2 s rule, at the cold-open →
+  job beat boundary (visual cut + new headline carry it; reads as a
+  deliberate beat pause).
+- Teaser silent tail ~3.45 s measured (26.57–30.03), not 2 s.
+- The S3 "Seller service" line wraps awkwardly ("tedi/ous-sea.testnet")
+  at 100% zoom — legible, cosmetic only.
+- S2 frames clipped (0:24 deposit, 1:12 tamper); tamper S2 breaks the
+  explorer link mid-word (pre-existing frames, reused not re-shot).
+- Terminal black voids (~25% top, ~20% bottom) remain; 1.12× zoom crops
+  the "Call receipt" heading at 1:22.
+
+Fresh independent review panel (6 Nov ~13:17): video 28 → **43/60**;
+Impact 3→5, Originality 4→5, Technical 6→8, Design 3–4→6,
+Sustainability 4→5, AI-readability 6→7. Verdict: significant improvement
+YES, postable with the X caption YES. Single open item: Olly should
+listen to ~30 s first (panel could not hear audio). Full AFTER scorecard
+in `hidden_files/council-review-video-rebuild-2026-11-06.md` §7. Video is
+LOCAL ONLY — never uploaded anywhere. NOT pushed by this worker (parent
+owns the push; the old cut is live on GitHub Pages — the parent must
+re-upload the new binaries).

@@ -1,49 +1,156 @@
 1
-00:00:00,400 --> 00:00:04,070
-Failed call. Deducted: zero testnet NEAR.
+00:00:00,600 --> 00:00:02,170
+Failed call.
 
 2
-00:00:05,400 --> 00:00:14,500
-An agent needs one document checked before it files it.
-It pays 0.1 testnet NEAR — but only if the check comes back valid.
+00:00:02,170 --> 00:00:03,740
+Deducted: zero.
 
 3
-00:00:15,400 --> 00:00:23,720
-The buyer prepays testnet NEAR and sets a spending limit in the contract.
+00:00:05,400 --> 00:00:08,830
+Agents pay for every call, even the broken ones.
 
 4
-00:00:25,400 --> 00:00:36,950
-One successful call. The contract deducts exactly one call price —
-only because the buyer verified the success receipt.
+00:00:08,830 --> 00:00:12,650
+This agent needs one document checked before it files it.
 
 5
-00:00:38,400 --> 00:00:55,950
-Now a failed call. The buyer claims the failure —
-the held 0.1 testnet NEAR is released, never deducted.
+00:00:12,650 --> 00:00:16,080
+It pays only if the check comes back valid.
 
 6
-00:00:58,100 --> 00:01:02,550
-No receipt in thirty seconds — same release, never deducted.
+00:00:16,900 --> 00:00:23,780
+It puts down zero point five testnet NEAR, and sets a limit: no more than zero point two.
 
 7
-00:01:03,300 --> 00:01:09,900
-The receipt didn't check out, so nothing was deducted.
+00:00:23,780 --> 00:00:26,450
+Whatever happens, it can’t spend past that.
 
 8
-00:01:10,500 --> 00:01:16,960
-Second call, budget now used.
+00:00:27,500 --> 00:00:28,330
+First call.
 
 9
-00:01:20,400 --> 00:01:37,410
-And over budget, the contract refuses the call before any money moves.
-The contract logged the refusal; balance unchanged.
+00:00:28,330 --> 00:00:30,400
+The check comes back valid.
 
 10
-00:01:40,400 --> 00:01:44,750
-The contract holds the deposit and refuses overspending on-chain.
+00:00:30,910 --> 00:00:33,440
+The buyer checks the receipt.
 
 11
-00:01:47,500 --> 00:01:55,660
-Would you trust an agent that only pays for work it can prove?
-Replay it — repo in the replies — and tell us.
+00:00:33,440 --> 00:00:35,470
+Same fingerprint, real signature.
+
+12
+00:00:35,970 --> 00:00:39,670
+And only then does the contract take zero point one.
+
+13
+00:00:40,160 --> 00:00:44,580
+That’s the whole trick: the buyer checks, then the contract pays.
+
+14
+00:00:45,400 --> 00:00:47,270
+Now a call fails.
+
+15
+00:00:48,340 --> 00:00:51,630
+The buyer says so, and the money comes back.
+
+16
+00:00:52,700 --> 00:00:55,180
+Held, never taken.
+
+17
+00:00:55,180 --> 00:00:56,830
+Deducted: zero.
+
+18
+00:00:57,900 --> 00:01:00,800
+The seller’s own error note proves it failed.
+
+19
+00:01:01,200 --> 00:01:03,210
+No answer in thirty seconds?
+
+20
+00:01:03,210 --> 00:01:04,010
+Same deal.
+
+21
+00:01:04,010 --> 00:01:05,620
+The money comes back.
+
+22
+00:01:06,400 --> 00:01:08,600
+Someone fiddled with the receipt.
+
+23
+00:01:08,600 --> 00:01:10,370
+See that one letter?
+
+24
+00:01:10,370 --> 00:01:13,460
+The buyer catches it, and pays nothing.
+
+25
+00:01:14,300 --> 00:01:15,740
+Second good check.
+
+26
+00:01:16,510 --> 00:01:18,240
+That’s the limit reached.
+
+27
+00:01:19,000 --> 00:01:21,900
+Two good checks, zero point two spent.
+
+28
+00:01:21,900 --> 00:01:23,560
+The budget is gone.
+
+29
+00:01:24,400 --> 00:01:28,960
+One more call, and the contract says no before any money moves.
+
+30
+00:01:29,980 --> 00:01:33,120
+Over budget, refused, on the record.
+
+31
+00:01:34,150 --> 00:01:35,880
+Balance untouched.
+
+32
+00:01:36,900 --> 00:01:39,110
+That’s the limit doing its job.
+
+33
+00:01:40,400 --> 00:01:42,280
+The buyer checks every receipt.
+
+34
+00:01:42,280 --> 00:01:46,420
+The contract only pays on a receipt the buyer has signed.
+
+35
+00:01:47,400 --> 00:01:49,030
+Replay it yourself.
+
+36
+00:01:50,300 --> 00:01:52,080
+The link’s in the replies.
+
+37
+00:01:53,600 --> 00:01:54,570
+MeteredPay.
+
+38
+00:01:54,570 --> 00:01:56,510
+Failed call?
+
+39
+00:01:56,510 --> 00:01:58,450
+Deducted: zero.
 
