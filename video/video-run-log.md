@@ -705,3 +705,135 @@ in `hidden_files/council-review-video-rebuild-2026-11-06.md` §7. Video is
 LOCAL ONLY — never uploaded anywhere. NOT pushed by this worker (parent
 owns the push; the old cut is live on GitHub Pages — the parent must
 re-upload the new binaries).
+
+## v3 — 6 Nov 2026 (TTS voiceover, Pleased Skylight, speed 92)
+
+Build: `video/work/assemble-v3.py` (adapted from assemble-v2.py),
+narration `video/work/narr3/` — 5 LONG CONTINUOUS takes, one `tts speak`
+call each, never sentence-by-sentence, never synthesize-script, never
+time-stretched. Voice: Pleased Skylight
+`avocado_v2:vd3_vd2_r8_rep1k_0147_v068_28k_g5k` (bake-off winner; every
+`tts speak` return matched the requested ID — no substitution). Speed 92
+(intro test: 157.0 wpm at 92 vs 161.0 at 100; 92 nearer the 150 target).
+TTS input spells the brand "Metered Pay" (spaced): Whisper tiny heard
+compound "MeteredPay" as "me, Ted Pay" vs spaced as "Meatred Pay" —
+spaced is clearer; captions/on-screen text stay "MeteredPay". No genuine
+listen test happened anywhere — no agent can hear audio.
+
+Script: `VIDEO-SCRIPT.md` replaced with the v3 final script (v2 preserved
+in git history). 251 words as rendered. Fallback intro USED (38 words):
+the 43-word full intro ran 16.0–16.4 s at speed 92–100 and would not fit
+the 15 s slot; fallback at speed 92 is 15.66 s of speech (145.6 wpm),
+0.66 s past the slot, inside the script's own ~1 s tolerance — Shot A
+runs 0–15.66 s, Shot B 15.66–23 s. Intro first line changed to "This is
+MeteredPay, on testnet." (spoken test-money disclosure, per the draft's
+binding rule). Factual correction: the script said "ninety-two
+characters"; the video05 document is 89 characters / 12 words, input SHA
+`36ac8134…8063` recomputed exactly from the canonical input (the "92"
+belongs to the freeze1011 run). Narration corrected to "eighty-nine
+characters"; script + storyboard updated consistently.
+
+Takes (measured Whisper word timings, `narr3/sentence-timings.json`,
+38 cues): A 0.00, B 15.66, CDE 23.30, FGH 53.00, IJKLM 84.70. Last word
+ends exactly 120.02 s. Placement compromises (logged, not hidden): D3
+"Valid — against the schema." (39.20–40.52) spills into E's verify
+close-up (the verify card IS the validity proof); E's first sentence
+lands 41.76, leaving 38–41.76 silent over the verify card (reading
+time); K1 starts 102.24, 0.76 s before K's visual; L1 starts 109.38,
+0.62 s before L's visual; H strip keeps the main-run state while the
+tamper frames show the tamper run's own balances (strip is the main
+journey's persistent device).
+
+New rendered elements (`video/work/render-cards-v3.py`): persistent
+balance strip (one PNG per state, changed digit Amber #D97706, subline
+variants incl. tx pills), title card (Shot A), end card (Shot M, with
+"Narration: synthetic voiceover" disclosure), fail-release-only card
+(Shot B), final-strip card (Shot K). Doc card reused from v2
+("Characters: 89" — verified correct). Thumbnail: v2 thumbnail kept
+(its three-row proof strip matches the v3 end card). Explorer attempt
+for the refusal tx 8sPCKFBt… on testnet.nearblocks.io: HTTP 403,
+Cloudflare Turnstile bot-block (same as v2); screenshot saved at
+/tmp/explorer-refusal.png (evidence only, NOT used in the video); Shot J
+uses the S3 refusal receipt + explorer URL pill as in v2. Never fake an
+explorer frame.
+
+Outputs (local only, never uploaded): `meteredpay-demo-2min.mp4`
+sha256 `78ce7b20…6b09`, 18,336,770 bytes (< 25,000,000 — GitHub web
+uploader limit), 120.03 s, 1920×1080, h264 + AAC, 30 fps;
+`meteredpay-teaser-30s.mp4` sha256 `ee71a4f3…26f`, 3,904,226 bytes,
+30.04 s. Both .srt from the same measured timings (38 / 8 cues; 2-min
+closing cue ends 120.02; 0 mismatches vs timings). Transcript updated
+(Pleased Skylight, speed 92, "Metered Pay" TTS spelling).
+
+QA fixes found by the test-frame gate and fixed in the v3.1 pass (same
+day, before commit): (1) J1 burned caption at fs26 overlapped the
+CH_REF chyron pill by ~48 px — caption fontsize now shrinks 26→22→20
+when a cue would reach within 20 px of an active pill (measured with
+PIL, not estimated). (2) 1.89 s silence at the E/F take gap (52.45–
+54.34) exceeded the ≤1.5 s rule — FGH start moved 53.90→53.00 (gap now
+0.54 s) and the E/F, F/G (68.78), G/H (77.90), H/I (84.70) visual
+boundaries moved to match. (3) I1's first 0.30 s was clipped by the
+H/I visual boundary at 85.0 — boundary moved to 84.70 (I1 complete).
+(4) Teaser tJ played ~0.96 s of the next sentence (J2) after J1 ended —
+audio truncated at J1's end (audio_end) and tJ shortened to 5.0 s,
+end card 2.82 s.
+
+Gate results (all logged in the build log):
+- ffprobe PASS: 120.03 s / 30.04 s, 1920×1080, h264 + AAC, 30 fps.
+- Size PASS: 18,336,770 B and 3,904,226 B, both < 25,000,000 B.
+- Test-frame gate PASS (25 frames, 2-min): every amount legible with
+  "testnet NEAR"; every chyron describes the picture beneath it; no
+  collisions after the fontsize fix (re-checked at 0:53, 0:69, 0:78,
+  0:85, 0:94 + teaser 0:24/0:27/0:29); CH_BACK only over the timeout
+  card. Strip ticks verified: Spent 0→0.1→0.2, Available 0.5→0.4→0.3,
+  changed values Amber.
+- Sound-off watch-through PASS: retell "an agent pays for a check only
+  if it passes; a failed check deducts nothing; overspending is
+  refused" + money seen moving via strip ticks.
+- Whisper transcript vs script PASS: all 38 sentences / all content
+  words present in the 2-min audio; all 8 teaser sentences present,
+  J2 fragment gone. Mishearings ("meated pay", "hell" for held,
+  "weight" for wait) are tiny-model ASR errors, not TTS errors.
+- silencedetect PASS (mid-video): 2-min max deliberate pause 1.20 s
+  (B/C gap), all ≥1.0 s runs 1.01–1.20 s; teaser mid-video max 1.39 s
+  (B/E gap). Digital-zero-ish runs at −60 dB max 1.17 s — the apad
+  padding in the inter-take gaps only; TTS takes themselves have
+  non-zero tails (bake-off tail RMS 0.00122). Teaser closing hold
+  2.82 s over the end card (deliberate; v2's was 3.45 s).
+- Tempo: per-take wpm A 145.6, B 138.5, CDE 127.6, FGH 124.7, IJKLM
+  122.3 (overall span 128.2 wpm vs ~150 target; three long takes sit
+  2–8 wpm below the ~130 soft lower bound — the cost of the long
+  continuous takes' natural pauses, not a speed change: each take was
+  rendered once at fixed speed 92, so no inter-sentence speed change
+  is possible by construction). Per-sentence wpm varies 66–227 — the
+  extremes are 2–3-word sentences and Whisper timestamp noise, not
+  tempo cliffs; reported honestly, not claimed as a clean pass.
+- Loudness: per-take mean −28.1 to −23.7 dB (take4 loudest, +4.4 dB
+  vs the intro); finished 2-min mean −28.9 dB, max −6.3 dB.
+- Captions vs timings PASS: SRT == measured timings, 0 mismatches;
+  closing caption ends exactly with the final word (120.02).
+- Hashes/balances PASS: every tx prefix in the frames re-checked
+  against `video/work/demo-run-console.log` (deposit AzzVziRy, cap
+  BHPKq6rm, success #1 request 943GuoYM / deduction FdAowPRk, fail
+  6XsMx3bK / release 7j4Jijr9, timeout 9zEfv7JQ / release FqP9nzPK,
+  success #2 AXEiBcbc / FiHaJ9uv, refusal 8sPCKFBt — each found once)
+  and `tamper-run-console.log` (GDooxNJT, 7rEaW3An, db62657b);
+  response hashes 2edf3f35 / 6db11505 present. NOTE:
+  `dashboard/frozen-run.json` is the freeze1011 run, not video05 —
+  do not use it to check video05 hashes.
+- `node dashboard/verify.mjs` → DASHBOARD VERIFY OK.
+- `git diff src/lib.rs` = 0 lines (frozen contract untouched).
+
+Residual defects (not hidden): headline == burned caption for ~1.5 s
+on three shots (B "Watch this first.", D "One document to check.",
+I "Second good check." — headline and first caption sentence are the
+same words); K headline repeats the final-strip card's own title;
+S3 "Seller service" line still wraps ("tedi/ous-sea.testnet") and S2
+frames still clip their top balance boxes (pre-existing v2 frames,
+reused not re-shot); terminal black voids remain; per-take wpm 122–
+128 on the three long takes vs the ~130 soft lower bound (see Tempo
+above); teaser end-card hold 2.82 s silent. v2's 28 MB rejection is
+fixed by construction (18.3 MB).
+
+Video is LOCAL ONLY — never uploaded anywhere. NOT pushed by this
+worker (parent owns the push).
