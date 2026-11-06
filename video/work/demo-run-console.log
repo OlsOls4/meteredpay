@@ -1,0 +1,56 @@
+MeteredPay buyer script — demo mode — TESTNET ONLY (contract apathetic-party.testnet)
+Buyer: mp-video05.testnet (public key ed25519:GtrgSWsK651kttAvWLjxoLWfiZwoJ8hKTAw753o1hKFW) — never prints a private key.
+Seller API: http://127.0.0.1:8787 | Deposit: 0.5 testnet NEAR | Cap: 0.2 testnet NEAR
+Contract: seller=tedious-sea.testnet price=0.1000 testnet NEAR timeout=600s
+[contract-confirmed] {"seller":{"seller_account_id":"tedious-sea.testnet","seller_public_key":"ed25519:6zG7yLp2jqHxfkXfYgsL1ZXSf2NVQoRRaib6im72ubnm","price_per_call":"100000000000000000000000","call_timeout_seconds":"600"}}
+  balance before (fresh buyer expected): deposit=0.0000 testnet NEAR held=0.0000 testnet NEAR spent=0.0000 testnet NEAR available=0.0000 testnet NEAR cap=0.0000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+[deposit] {"tx":"AzzVziRy57WiGjSGgcwpa3nK91bVMJQSL2Wt4dUKCP8K","link":"https://testnet.nearblocks.io/txns/AzzVziRy57WiGjSGgcwpa3nK91bVMJQSL2Wt4dUKCP8K","amount_near":"0.5","bal":{"deposit":"500000000000000000000000","held":"0","spent":"0","available":"500000000000000000000000","cap":"500000000000000000000000"}}
+  balance after deposit: deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.0000 testnet NEAR available=0.5000 testnet NEAR cap=0.5000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+[set_budget_cap] {"tx":"BHPKq6rm3pSqS9ynyYK3AtokdZVRFW9MeJYEKCyjjUJ7","link":"https://testnet.nearblocks.io/txns/BHPKq6rm3pSqS9ynyYK3AtokdZVRFW9MeJYEKCyjjUJ7","cap_near":"0.2","bal":{"deposit":"500000000000000000000000","held":"0","spent":"0","available":"500000000000000000000000","cap":"200000000000000000000000"}}
+  balance after cap: deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.0000 testnet NEAR available=0.5000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+[request_call] {"call_id":"video05-success-001","tx":"943GuoYMN6g7ukc8DVBBK78fQv9zwTWbxo6pFUq3huD2","link":"https://testnet.nearblocks.io/txns/943GuoYMN6g7ukc8DVBBK78fQv9zwTWbxo6pFUq3huD2","status":"paid","bal":{"deposit":"500000000000000000000000","held":"100000000000000000000000","spent":"0","available":"400000000000000000000000","cap":"200000000000000000000000"}}
+  balance after request video05-success-001 (price held): deposit=0.5000 testnet NEAR held=0.1000 testnet NEAR spent=0.0000 testnet NEAR available=0.4000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+  verified: response hash matches, seller attestation valid for video05-success-001
+  balance after success video05-success-001 (deducted): deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.1000 testnet NEAR available=0.4000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+[success-deducted] {"call_id":"video05-success-001","tx":"FdAowPRkBuUrQkGgTnfhfNsnvqHZTkNzpA1nyt1SMhFT","link":"https://testnet.nearblocks.io/txns/FdAowPRkBuUrQkGgTnfhfNsnvqHZTkNzpA1nyt1SMhFT","response_hash":"2edf3f35e9ad2cc8d4668a8ba9c7a02157ea25ad708e1dda00b5c08b7ef0124b","bal":{"deposit":"500000000000000000000000","held":"0","spent":"100000000000000000000000","available":"400000000000000000000000","cap":"200000000000000000000000"}}
+[request_call] {"call_id":"video05-fail-001","tx":"6XsMx3bKnjrpiUDfwMc5o55GosL8B7Qgx2sX2o9PD2JL","link":"https://testnet.nearblocks.io/txns/6XsMx3bKnjrpiUDfwMc5o55GosL8B7Qgx2sX2o9PD2JL","status":"paid","bal":{"deposit":"500000000000000000000000","held":"100000000000000000000000","spent":"100000000000000000000000","available":"300000000000000000000000","cap":"200000000000000000000000"}}
+  balance after request video05-fail-001 (price held): deposit=0.5000 testnet NEAR held=0.1000 testnet NEAR spent=0.1000 testnet NEAR available=0.3000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+  verified: seller error attestation valid for video05-fail-001
+  balance after failure claim video05-fail-001 (seller_error; held amount released, never deducted): deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.1000 testnet NEAR available=0.4000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+[failed-refunded] {"call_id":"video05-fail-001","failure_reason":"seller_error","tx":"7j4Jijr9sptyhgfzv9r6CPXYd3B2enzVBNXnedHgzJaA","link":"https://testnet.nearblocks.io/txns/7j4Jijr9sptyhgfzv9r6CPXYd3B2enzVBNXnedHgzJaA","bal":{"deposit":"500000000000000000000000","held":"0","spent":"100000000000000000000000","available":"400000000000000000000000","cap":"200000000000000000000000"}}
+[request_call] {"call_id":"video05-timeout-001","tx":"9zEfv7JQjFD1b3CcK2Agdc4x7c6a3HhKXz1MLmywHXhh","link":"https://testnet.nearblocks.io/txns/9zEfv7JQjFD1b3CcK2Agdc4x7c6a3HhKXz1MLmywHXhh","status":"paid","bal":{"deposit":"500000000000000000000000","held":"100000000000000000000000","spent":"100000000000000000000000","available":"300000000000000000000000","cap":"200000000000000000000000"}}
+  balance after request video05-timeout-001 (price held): deposit=0.5000 testnet NEAR held=0.1000 testnet NEAR spent=0.1000 testnet NEAR available=0.3000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+  waiting up to 30s for the seller API (scenario=timeout)…
+  seller did not respond within 30s — timeout, not a success
+  balance after failure claim video05-timeout-001 (timeout; held amount released, never deducted): deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.1000 testnet NEAR available=0.4000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+[timeout-refunded] {"call_id":"video05-timeout-001","failure_reason":"timeout","tx":"FqP9nzPK5VShJpJTSD6L7vUSceV4n5BbUjqDaCUCk8nU","link":"https://testnet.nearblocks.io/txns/FqP9nzPK5VShJpJTSD6L7vUSceV4n5BbUjqDaCUCk8nU","bal":{"deposit":"500000000000000000000000","held":"0","spent":"100000000000000000000000","available":"400000000000000000000000","cap":"200000000000000000000000"}}
+[request_call] {"call_id":"video05-success-002","tx":"AXEiBcbcjyxjTPcnjLSqikBLs1PE8YhBiRfVGFx1hzZN","link":"https://testnet.nearblocks.io/txns/AXEiBcbcjyxjTPcnjLSqikBLs1PE8YhBiRfVGFx1hzZN","status":"paid","bal":{"deposit":"500000000000000000000000","held":"100000000000000000000000","spent":"100000000000000000000000","available":"300000000000000000000000","cap":"200000000000000000000000"}}
+  balance after request video05-success-002 (price held): deposit=0.5000 testnet NEAR held=0.1000 testnet NEAR spent=0.1000 testnet NEAR available=0.3000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+  verified: response hash matches, seller attestation valid for video05-success-002
+  balance after success video05-success-002 (deducted): deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.2000 testnet NEAR available=0.3000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+[success-deducted] {"call_id":"video05-success-002","tx":"FiHaJ9uvAMUPM3N1kWvpdoMxk77SodCyLRgxqX2YwcDT","link":"https://testnet.nearblocks.io/txns/FiHaJ9uvAMUPM3N1kWvpdoMxk77SodCyLRgxqX2YwcDT","response_hash":"6db115057e3723b8496234042ff6e0a6b29b13548ec2c1f087061398ed08680d","bal":{"deposit":"500000000000000000000000","held":"0","spent":"200000000000000000000000","available":"300000000000000000000000","cap":"200000000000000000000000"}}
+  refused: video05-overbudget-001 reason=over_budget (verbatim), balances unchanged
+  balance after refusal video05-overbudget-001: deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.2000 testnet NEAR available=0.3000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+[refused] {"call_id":"video05-overbudget-001","tx":"8sPCKFBtB3CKeyBXyxoUqwtuDLyi2y4YjC29cJyK5Tcj","link":"https://testnet.nearblocks.io/txns/8sPCKFBtB3CKeyBXyxoUqwtuDLyi2y4YjC29cJyK5Tcj","reason":"over_budget","bal":{"deposit":"500000000000000000000000","held":"0","spent":"200000000000000000000000","available":"300000000000000000000000","cap":"200000000000000000000000"}}
+  balance final: deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.2000 testnet NEAR available=0.3000 testnet NEAR cap=0.2000 testnet NEAR
+  (These are contract balances. Your wallet balance will differ by testnet gas paid for your own transactions, shown separately on the explorer.)
+[final] {"bal":{"deposit":"500000000000000000000000","held":"0","spent":"200000000000000000000000","available":"300000000000000000000000","cap":"200000000000000000000000"},"seller":{"seller_account_id":"tedious-sea.testnet","earned":"2200000000000000000000000","withdrawn":"200000000000000000000000"},"calls":[{"call_id":"video05-overbudget-001","status":"refused"},{"call_id":"video05-success-002","status":"success-deducted"},{"call_id":"video05-timeout-001","status":"timeout-refunded"},{"call_id":"video05-fail-001","status":"failed-refunded"},{"call_id":"video05-success-001","status":"success-deducted"}],"refusals":[{"call_id":"video05-overbudget-001","reason":"over_budget"}]}
+
+=== DEMO COMPLETE (TESTNET ONLY) ===
+Buyer mp-video05.testnet: deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.2000 testnet NEAR available=0.3000 testnet NEAR cap=0.2000 testnet NEAR
+Seller earned=2.2000 testnet NEAR withdrawn=0.2000 testnet NEAR (testnet NEAR)
+Calls: video05-overbudget-001=refused, video05-success-002=success-deducted, video05-timeout-001=timeout-refunded, video05-fail-001=failed-refunded, video05-success-001=success-deducted
+Run log: /home/hatch/workspace/near-meteredpay/repo/buyer/runs/demo-mp-video05.testnet-2026-11-05T22-14-54.jsonl
+Honesty: a failed/timeout call was never deducted — its held amount was released on a buyer claim. Buyer dishonesty is NOT solved (a buyer could claim failure after success).

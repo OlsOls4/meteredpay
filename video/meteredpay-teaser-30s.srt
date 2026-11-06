@@ -1,0 +1,16 @@
+1
+00:00:00,400 --> 00:00:04,100
+Failed call. Deducted: zero testnet NEAR.
+
+2
+00:00:06,400 --> 00:00:10,740
+One document checked on testnet. Deducted only if valid.
+
+3
+00:00:12,400 --> 00:00:16,580
+Successful call. Minus 0.1 testnet NEAR.
+
+4
+00:00:20,400 --> 00:00:24,610
+Over budget. Refused on-chain. Balance unchanged.
+

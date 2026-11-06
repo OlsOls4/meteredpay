@@ -1,0 +1,3 @@
+[dryrun] REFUSING TO START: Credential key ed25519:31ggWNoVikWC1KvtmgDps4GPz4o3Drbd89tbCLCeWrBW differs from the key registered on-chain (ed25519:6zG7yLp2jqHxfkXfYgsL1ZXSf2NVQoRRaib6im72ubnm). This seller cannot be paid by the frozen contract.
+[dryrun] This is the spec-literal startup rule (SELLER_SPEC.md Appendix A3).
+[dryrun] To run the shape-only dry run, set DRYRUN_ALLOW_UNREGISTERED_KEY=1.

@@ -1,0 +1,71 @@
+[
+  {
+    "file": "term-deposit.png",
+    "label": "deposit + cap",
+    "title": "$ node buyer.mjs --buyer mp-video05.testnet --mode demo --tag video05 --deposit 0.5 --cap 0.2",
+    "body": [
+      "[deposit] {\"tx\":\"AzzVziRy57WiGjSGgcwpa3nK91bVMJQSL2Wt4dUKCP8K\",\"link\":\"https://testnet.nearblocks.io/txns/AzzVziRy57WiGjSGgcwpa3nK91bVMJQSL2Wt4dUKCP8K\",\"amount_near\":\"0.5\",\"bal\":{\"deposit\":\"500000000000000000000000\",\"held\":\"0\",\"spent\":\"0\",\"available\":\"500000000000000000000000\",\"cap\":\"500000000000000000000000\"}}",
+      "  balance after deposit: deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.0000 testnet NEAR available=0.5000 testnet NEAR cap=0.5000 testnet NEAR",
+      "[set_budget_cap] {\"tx\":\"BHPKq6rm3pSqS9ynyYK3AtokdZVRFW9MeJYEKCyjjUJ7\",\"link\":\"https://testnet.nearblocks.io/txns/BHPKq6rm3pSqS9ynyYK3AtokdZVRFW9MeJYEKCyjjUJ7\",\"cap_near\":\"0.2\",\"bal\":{\"deposit\":\"500000000000000000000000\",\"held\":\"0\",\"spent\":\"0\",\"available\":\"500000000000000000000000\",\"cap\":\"200000000000000000000000\"}}",
+      "  balance after cap: deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.0000 testnet NEAR available=0.5000 testnet NEAR cap=0.2000 testnet NEAR"
+    ]
+  },
+  {
+    "file": "term-verify1.png",
+    "label": "success #1 — verification",
+    "title": "$ node buyer.mjs --buyer mp-video05.testnet --mode demo --tag video05 --deposit 0.5 --cap 0.2   — call video05-success-001",
+    "body": [
+      "  verified: response hash matches, seller attestation valid for video05-success-001",
+      "[success-deducted] {\"call_id\":\"video05-success-001\",\"tx\":\"FdAowPRkBuUrQkGgTnfhfNsnvqHZTkNzpA1nyt1SMhFT\",\"link\":\"https://testnet.nearblocks.io/txns/FdAowPRkBuUrQkGgTnfhfNsnvqHZTkNzpA1nyt1SMhFT\",\"response_hash\":\"2edf3f35e9ad2cc8d4668a8ba9c7a02157ea25ad708e1dda00b5c08b7ef0124b\",\"bal\":{\"deposit\":\"500000000000000000000000\",\"held\":\"0\",\"spent\":\"100000000000000000000000\",\"available\":\"400000000000000000000000\",\"cap\":\"200000000000000000000000\"}}"
+    ]
+  },
+  {
+    "file": "term-fail.png",
+    "label": "fail — failure claim",
+    "title": "$ node buyer.mjs --buyer mp-video05.testnet --mode demo --tag video05 --deposit 0.5 --cap 0.2   — call video05-fail-001",
+    "body": [
+      "  verified: seller error attestation valid for video05-fail-001",
+      "[failed-refunded] {\"call_id\":\"video05-fail-001\",\"failure_reason\":\"seller_error\",\"tx\":\"7j4Jijr9sptyhgfzv9r6CPXYd3B2enzVBNXnedHgzJaA\",\"link\":\"https://testnet.nearblocks.io/txns/7j4Jijr9sptyhgfzv9r6CPXYd3B2enzVBNXnedHgzJaA\",\"bal\":{\"deposit\":\"500000000000000000000000\",\"held\":\"0\",\"spent\":\"100000000000000000000000\",\"available\":\"400000000000000000000000\",\"cap\":\"200000000000000000000000\"}}",
+      "  balance after failure claim video05-fail-001 (seller_error; held amount released, never deducted): deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.1000 testnet NEAR available=0.4000 testnet NEAR cap=0.2000 testnet NEAR"
+    ]
+  },
+  {
+    "file": "term-timeout.png",
+    "label": "timeout — 30 s wait, settled row",
+    "title": "$ node buyer.mjs --buyer mp-video05.testnet --mode demo --tag video05 --deposit 0.5 --cap 0.2   — call video05-timeout-001",
+    "body": [
+      "  waiting up to 30s for the seller API (scenario=timeout)…",
+      "  seller did not respond within 30s — timeout, not a success",
+      "[timeout-refunded] {\"call_id\":\"video05-timeout-001\",\"failure_reason\":\"timeout\",\"tx\":\"FqP9nzPK5VShJpJTSD6L7vUSceV4n5BbUjqDaCUCk8nU\",\"link\":\"https://testnet.nearblocks.io/txns/FqP9nzPK5VShJpJTSD6L7vUSceV4n5BbUjqDaCUCk8nU\",\"bal\":{\"deposit\":\"500000000000000000000000\",\"held\":\"0\",\"spent\":\"100000000000000000000000\",\"available\":\"400000000000000000000000\",\"cap\":\"200000000000000000000000\"}}"
+    ]
+  },
+  {
+    "file": "term-tamper.png",
+    "label": "tamper — separate run, same contract",
+    "title": "$ node buyer.mjs --buyer mp-tamper05.testnet --mode single --tag tamper05 --api http://127.0.0.1:8789 --deposit 0.5 --cap 0.2   — separate run",
+    "body": [
+      "  invalid response for tamper05-single-2026-11-05T22-43-56-9jx7t9: response hash mismatch: recomputed db62657be2006976882eb2236bb9f6a55dcbc672f821c5296c5ac67fea854fea != stated 0b62657be2006976882eb2236bb9f6a55dcbc672f821c5296c5ac67fea854fea — submitting failure claim invalid_response",
+      "[failed-refunded] {\"call_id\":\"tamper05-single-2026-11-05T22-43-56-9jx7t9\",\"failure_reason\":\"invalid_response\",\"tx\":\"7rEaW3AntDRHynYDxi1JWiTDCtyzM4VYyMYC4d5PgGU7\",\"link\":\"https://testnet.nearblocks.io/txns/7rEaW3AntDRHynYDxi1JWiTDCtyzM4VYyMYC4d5PgGU7\",\"bal\":{\"deposit\":\"500000000000000000000000\",\"held\":\"0\",\"spent\":\"0\",\"available\":\"500000000000000000000000\",\"cap\":\"200000000000000000000000\"}}",
+      "  balance after failure claim tamper05-single-2026-11-05T22-43-56-9jx7t9 (invalid_response; held amount released, never deducted): deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.0000 testnet NEAR available=0.5000 testnet NEAR cap=0.2000 testnet NEAR"
+    ]
+  },
+  {
+    "file": "term-verify2.png",
+    "label": "success #2 — verification",
+    "title": "$ node buyer.mjs --buyer mp-video05.testnet --mode demo --tag video05 --deposit 0.5 --cap 0.2   — call video05-success-002",
+    "body": [
+      "  verified: response hash matches, seller attestation valid for video05-success-002",
+      "[success-deducted] {\"call_id\":\"video05-success-002\",\"tx\":\"FiHaJ9uvAMUPM3N1kWvpdoMxk77SodCyLRgxqX2YwcDT\",\"link\":\"https://testnet.nearblocks.io/txns/FiHaJ9uvAMUPM3N1kWvpdoMxk77SodCyLRgxqX2YwcDT\",\"response_hash\":\"6db115057e3723b8496234042ff6e0a6b29b13548ec2c1f087061398ed08680d\",\"bal\":{\"deposit\":\"500000000000000000000000\",\"held\":\"0\",\"spent\":\"200000000000000000000000\",\"available\":\"300000000000000000000000\",\"cap\":\"200000000000000000000000\"}}"
+    ]
+  },
+  {
+    "file": "term-refusal.png",
+    "label": "refusal — over_budget",
+    "title": "$ node buyer.mjs --buyer mp-video05.testnet --mode demo --tag video05 --deposit 0.5 --cap 0.2   — call video05-overbudget-001",
+    "body": [
+      "  refused: video05-overbudget-001 reason=over_budget (verbatim), balances unchanged",
+      "[refused] {\"call_id\":\"video05-overbudget-001\",\"tx\":\"8sPCKFBtB3CKeyBXyxoUqwtuDLyi2y4YjC29cJyK5Tcj\",\"link\":\"https://testnet.nearblocks.io/txns/8sPCKFBtB3CKeyBXyxoUqwtuDLyi2y4YjC29cJyK5Tcj\",\"reason\":\"over_budget\",\"bal\":{\"deposit\":\"500000000000000000000000\",\"held\":\"0\",\"spent\":\"200000000000000000000000\",\"available\":\"300000000000000000000000\",\"cap\":\"200000000000000000000000\"}}",
+      "  balance after refusal video05-overbudget-001: deposit=0.5000 testnet NEAR held=0.0000 testnet NEAR spent=0.2000 testnet NEAR available=0.3000 testnet NEAR cap=0.2000 testnet NEAR"
+    ]
+  }
+]

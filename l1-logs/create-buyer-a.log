@@ -1,0 +1,21 @@
+├  Your transaction:
+│    signer_id:    testnet
+│    actions:
+│       -- create account:      mp-l1a-buyer.testnet
+│       -- add access key:     
+│                       public key:   ed25519:EKdzSixWcsYbKtEBNFeMu9E1gP1K7yKNwx7KGwP7V4gJ
+│                       permission:   FullAccess
+│     [0m
+├  Transaction Execution Info:
+│    Transaction ID: 3dotiufcBtriuxvvmCtJXLR9yf4JLdZE1W9soPFEuU9C
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/3dotiufcBtriuxvvmCtJXLR9yf4JLdZE1W9soPFEuU9C
+[0m
+New account <mp-l1a-buyer.testnet> created successfully.
+The data for the access key is saved in a file /home/hatch/.near-credentials/testnet/mp-l1a-buyer.testnet/ed25519_EKdzSixWcsYbKtEBNFeMu9E1gP1K7yKNwx7KGwP7V4gJ.json
+The data for the access key is saved in a file /home/hatch/.near-credentials/testnet/mp-l1a-buyer.testnet.json
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear account create-account sponsor-by-faucet-service mp-l1a-buyer.testnet autogenerate-new-keypair --signature-scheme ed25519 save-to-legacy-keychain network-config testnet create[39m
+

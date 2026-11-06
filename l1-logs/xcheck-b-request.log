@@ -1,0 +1,54 @@
+├  Unsigned transaction:
+│    signer_id:    mp-l1x-buyer.testnet
+│    receiver_id:  mp-meteredpay-b.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  request_call
+│                       args:         {
+│                                       "call_id": "xcheck-b-001",
+│                                       "seller_account_id": "mp-seller2.testnet"
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:GLvex8tq7gHDKGsL4RyqRScACQhGQZRky8VirTJuL8fC
+│    Signature:  ed25519:4fZVAVo8oc5HHbVsQWhaDnMV9LCioRVmo9BTTUqtuVjkEYMDzMLPiWShCaYrvyV4AR8H6vUQsDTJHoh2b8x6EcH5
+│     [0m
+├  Transaction Execution Info:
+│    Gas burned: 0.312 Tgas
+│    Transaction fee: 0.0000311826513485 NEAR
+│    Transaction ID: 3baNTxyuhRgtFXseQvwTXk8QbXBHqNKn4dCqxUbfqZNa
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/3baNTxyuhRgtFXseQvwTXk8QbXBHqNKn4dCqxUbfqZNa
+│     [0m
+├  Function execution logs:
+│    Logs [mp-meteredpay-b.testnet]:   No logs
+│    Logs [mp-l1x-buyer.testnet]:   No logs
+│     [0m
+
+Function execution return value (printed to stdout):
+{
+  "buyer_account_id": "mp-l1x-buyer.testnet",
+  "call_id": "xcheck-b-001",
+  "failure_reason": null,
+  "price": "100000000000000000000000",
+  "proposed_at": "1793954800063168324",
+  "proposed_height": "276465214",
+  "resolved_at": null,
+  "resolved_height": null,
+  "response_hash": null,
+  "seller_account_id": "mp-seller2.testnet",
+  "status": "paid"
+}
+
+
+The "request_call" call to <mp-meteredpay-b.testnet> on behalf of <mp-l1x-buyer.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction mp-meteredpay-b.testnet request_call json-args '{"call_id": "xcheck-b-001", "seller_account_id": "mp-seller2.testnet"}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as mp-l1x-buyer.testnet network-config testnet sign-with-keychain send[39m
+

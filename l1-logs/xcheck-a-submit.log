@@ -1,0 +1,33 @@
+├  Unsigned transaction:
+│    signer_id:    mp-l1x-buyer.testnet
+│    receiver_id:  mp-meteredpay-a.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  submit_success
+│                       args:         {
+│                                       "buyer_signature": "oIDYJK3UkmS7IHAdlCN0jjswb5N3WoNaPlLX0gOr8iz4f3KJSda9BwYJ1OH9UYPHisxn0yXwy343GPFEQ1NkDg==",
+│                                       "call_id": "xcheck-a-001",
+│                                       "response_hash": "f6e9d6f930ec2f8fa97114460ee0a785316815a2fb2f5c10a0132dda418510a2",
+│                                       "seller_signature": "H7otpz+E3kxnaCfINjvHN9TPBXAwjPM4UrRVQ778GrqVwcFLM9gvZVWT1k50F+R8s6i7WQWu0XVHdKprz6YoBA=="
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:GLvex8tq7gHDKGsL4RyqRScACQhGQZRky8VirTJuL8fC
+│    Signature:  ed25519:4VbCRtijwuRLfEqMrZcZ3VZxyLYRz7MJj4kAxZ57UAxttBChLKxGSaY1TPQfZkFjB6Vs6KoEQkBHDcMuDRARfvVj
+│     [0m
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction mp-meteredpay-a.testnet submit_success json-args '{"call_id": "xcheck-a-001", "response_hash": "f6e9d6f930ec2f8fa97114460ee0a785316815a2fb2f5c10a0132dda418510a2", "seller_signature": "H7otpz+E3kxnaCfINjvHN9TPBXAwjPM4UrRVQ778GrqVwcFLM9gvZVWT1k50F+R8s6i7WQWu0XVHdKprz6YoBA==", "buyer_signature": "oIDYJK3UkmS7IHAdlCN0jjswb5N3WoNaPlLX0gOr8iz4f3KJSda9BwYJ1OH9UYPHisxn0yXwy343GPFEQ1NkDg=="}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as mp-l1x-buyer.testnet network-config testnet sign-with-keychain send[39m
+
+
+`near` CLI has a new update available [2m0.30.1[0m →  [32m0.31.1[0m
+To update `near` CLI use: [33mnear extensions self-update[39m
+Error: 
+   0: [91mError: An error occurred during a `FunctionCall` action.
+      ExecutionError("Smart contract panicked: Invalid seller signature")[0m
+
+Location:
+   [35msrc/common.rs[0m:[35m1808[0m

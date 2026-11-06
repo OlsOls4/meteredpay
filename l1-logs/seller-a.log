@@ -1,0 +1,8 @@
+[seller] contract mp-meteredpay-a.testnet confirmed: seller=tedious-sea.testnet price=100000000000000000000000 yoctoNEAR timeout=600s
+[seller] signing as tedious-sea.testnet (ed25519:6zG7yLp2jqHxfkXfYgsL1ZXSf2NVQoRRaib6im72ubnm)
+[seller] MeteredPay demonstrator seller listening on http://127.0.0.1:8787 (testnet only, contract mp-meteredpay-a.testnet)
+[seller] /call call_id=redeploy-a-success-001 buyer=mp-l1a-buyer.testnet scenario=success schema=quote
+[seller] /call call_id=redeploy-a-fail-001 buyer=mp-l1a-buyer.testnet scenario=fail schema=quote
+[seller] /call call_id=redeploy-a-timeout-001 buyer=mp-l1a-buyer.testnet scenario=timeout schema=quote
+[seller] /call call_id=redeploy-a-success-002 buyer=mp-l1a-buyer.testnet scenario=success schema=quote
+[seller] /call call_id=xcheck-b-001 buyer=mp-l1x-buyer.testnet scenario=success schema=quote

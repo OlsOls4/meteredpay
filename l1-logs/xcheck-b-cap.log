@@ -1,0 +1,48 @@
+├  Unsigned transaction:
+│    signer_id:    mp-l1x-buyer.testnet
+│    receiver_id:  mp-meteredpay-b.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  set_budget_cap
+│                       args:         {
+│                                       "budget_cap": "200000000000000000000000"
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:GLvex8tq7gHDKGsL4RyqRScACQhGQZRky8VirTJuL8fC
+│    Signature:  ed25519:3XatEPapozSCkR5NagJLYr2M6mnn69WMJSxXTbDp1gPyPjWegYJPpdQhjfYzDyBy5xpUKndXS61BhTfy71D1RS24
+│     [0m
+├  Transaction Execution Info:
+│    Gas burned: 0.311 Tgas
+│    Transaction fee: 0.0000310682104325 NEAR
+│    Transaction ID: Du7f51QzjRSJetZ5QFdaxeCi9Aw8HPXJqTEmPB3aMh9v
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/Du7f51QzjRSJetZ5QFdaxeCi9Aw8HPXJqTEmPB3aMh9v
+│     [0m
+├  Function execution logs:
+│    Logs [mp-meteredpay-b.testnet]:   No logs
+│    Logs [mp-l1x-buyer.testnet]:   No logs
+│     [0m
+
+Function execution return value (printed to stdout):
+{
+  "account_id": "mp-l1x-buyer.testnet",
+  "available": "500000000000000000000000",
+  "budget_cap": "200000000000000000000000",
+  "deposit": "500000000000000000000000",
+  "held": "0",
+  "spent": "0"
+}
+
+
+The "set_budget_cap" call to <mp-meteredpay-b.testnet> on behalf of <mp-l1x-buyer.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction mp-meteredpay-b.testnet set_budget_cap json-args '{"budget_cap": "200000000000000000000000"}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' sign-as mp-l1x-buyer.testnet network-config testnet sign-with-keychain send[39m
+

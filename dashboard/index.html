@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MeteredPay — pay per successful call (NEAR testnet)</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="top">
+  <h1>MeteredPay</h1>
+  <span class="testnet-banner">TESTNET — no real money. Testnet NEAR has no real-world value.</span>
+</header>
+<main id="main">
+  <noscript><p class="banner"><strong>JavaScript is off.</strong> This dashboard needs JavaScript to render the recorded run and live balances. The same recorded run is written up in README §2.5.</p></noscript>
+  <p class="banner" id="js-warning"><strong>JavaScript is still loading.</strong> If this message stays, JavaScript failed to load — the recorded run is written up in README §2.5.</p>
+  <nav class="views" aria-label="Dashboard views">
+    <a href="#/s1">S1 Judge start</a>
+    <a href="#/s2">S2 Buyer console</a>
+    <a href="#/s3">S3 Call receipt</a>
+    <a href="#/s4">S4 Seller console</a>
+    <a href="#/s5">S5 Contract &amp; replay</a>
+  </nav>
+  <div id="live" class="sr-only" aria-live="polite"></div>
+
+  <!-- S1 — Landing / Judge start -->
+  <section class="view" id="view-s1" aria-label="Judge start">
+    <h2>Pay per successful agent call — nothing for a failed call.</h2>
+    <p>A buyer prepays testnet NEAR into a contract. A successful call
+    deducts 0.1 testnet NEAR. A failed call is released — held amount
+    released, never deducted. An over-budget call is refused on-chain.
+    This page is read-only: it never signs, never sends a transaction,
+    and never asks for a private key or seed phrase.</p>
+    <p><strong>What is sold:</strong> the seller is a JSON
+    schema-validation service (<span class="mono">meteredpay-schema-validate</span>) —
+    it checks a document against a fixed schema and returns valid/invalid
+    plus an error list. A document that fails validation is a real
+    failure: the call is never deducted. Send a document with the wrong
+    type (a number where text is required) and the buyer pays nothing for it.</p>
+    <p><strong>Who it helps:</strong> a buyer agent that pays per API call
+    only pays for calls it can verify, and a seller is paid 0.1 testnet
+    NEAR per successful call — a failed call deducts nothing from the
+    buyer and earns the seller nothing, so neither side chases payment
+    for work that did not check out.</p>
+    <div class="proof-cards">
+      <div class="proof-card"><span class="badge ok">Succeeded</span><p>Deducted 0.1 testnet NEAR — only after the buyer verified the seller signature.</p></div>
+      <div class="proof-card"><span class="badge amber">Failed</span><p>Refunded — held amount released, never deducted. The buyer submits a failure claim; that claim releases the hold.</p></div>
+      <div class="proof-card"><span class="badge neutral">Refused</span><p>Over budget — refused on-chain. A successful transaction with an on-chain refusal record; balances unchanged.</p></div>
+    </div>
+    <h3>See the 60-second proof — guided, no wallet needed</h3>
+    <p>Four beats, one card at a time: a call that succeeds and deducts,
+    a call that fails and is released, a second success that reaches the
+    cap, and a call the contract refuses. (The timeout beat is optional,
+    after the refusal.) Each card shows the result, the amount, the
+    balance after, the explorer transactions, and the receipt. No wallet,
+    no setup, nothing is sent from this page — the proof is the recorded
+    run below.</p>
+    <p><button type="button" id="guided-start">See the 60-second proof</button></p>
+    <div id="guided" aria-live="polite"></div>
+    <h3>Recorded demo run</h3>
+    <p id="playback-note" aria-live="polite">Recorded demo run — replay it live on S5.</p>
+    <div class="table-wrap"><table>
+      <caption class="small">Canonical replay — freeze1011 run, schema-validation service, 5 Nov 2026 21:06 UTC. Machine-readable manifest: <span class="mono">dashboard/frozen-run.json</span>.</caption>
+      <thead><tr><th>Call</th><th>Result</th><th>Balance after</th><th>Transactions (explorer)</th><th>Receipt</th></tr></thead>
+      <tbody id="playback-rows"></tbody>
+    </table></div>
+    <p class="small">Recorded demo run — replay it live on S5. Each row shows
+    both transactions for the call: the request transaction and the
+    deduction or release transaction. A refusal is a single successful
+    transaction with reason <code>over_budget</code>.</p>
+    <p class="small">Seller service (days 8–9): JSON schema validation
+    (<span class="mono">meteredpay-schema-validate</span> — validates a
+    document against a fixed schema and returns valid/invalid + an
+    error list + the SHA-256 of the canonical input). The recorded run
+    above is the canonical freeze1011 replay on this service.</p>
+    <div id="s1-status" aria-live="polite"></div>
+    <p><a href="#/s5">Replay it yourself on the frozen contract</a></p>
+  </section>
+
+  <!-- S2 — Buyer console -->
+  <section class="view" id="view-s2" aria-label="Buyer console">
+    <h2>Buyer console</h2>
+    <p class="small">Read-only. Balances are read live from the contract
+    <span class="mono">apathetic-party.testnet</span>. To make calls, run
+    the buyer script from the README — this page never sends a transaction.</p>
+    <label for="buyer-account">Testnet account ID</label>
+    <input type="text" id="buyer-account" value="freeze1011-buyer.testnet" autocomplete="off" spellcheck="false">
+    <p><button type="button" id="buyer-load">Load balance &amp; call history</button></p>
+    <p class="small">Deep link: <code>#/s2?buyer=&lt;buyer&gt;.testnet</code> prefills the account and loads it — e.g. <code>#/s2?buyer=freeze1011-buyer.testnet</code>.</p>
+    <div id="buyer-result" aria-live="polite">
+      <p>Load a buyer to see the five-number balance and call history.</p>
+    </div>
+    <h3>Make a call (buyer script)</h3>
+    <p>Calls are made by the buyer script, not this page:</p>
+    <p><code>node buyer/buyer.mjs --buyer &lt;buyer&gt;.testnet --mode demo --tag demo</code></p>
+    <p class="small">Demonstrator mode: the seller <code>scenario</code>
+    controls (success / fail / timeout) choose the demo outcome. A real
+    seller ignores <code>scenario</code>.</p>
+    <h3>The 30-second buyer wait</h3>
+    <p class="small">Demonstrator mode — this timer shows how long the
+    buyer waits for a seller receipt. No call is made and no money moves.</p>
+    <p><button type="button" id="wait-demo-btn">Show the 30-second wait</button> <button type="button" id="wait-skip-btn" class="secondary">Skip the wait</button></p>
+    <div class="progress" id="wait-progress" role="progressbar" aria-valuemin="0" aria-valuemax="30" aria-valuenow="0" aria-label="Buyer wait progress"><div id="wait-bar"></div></div>
+    <p id="wait-text" aria-live="polite">Not started.</p>
+    <p class="small">A call that costs exactly your available budget succeeds.
+    Budget-cap rejections use exactly: “Budget cap cannot exceed your deposit”
+    and “Budget cap cannot be below what you have already spent”.</p>
+  </section>
+
+  <!-- S3 — Call result detail -->
+  <section class="view" id="view-s3" aria-label="Call result detail">
+    <h2>Call receipt</h2>
+    <p class="small">One call from the recorded demo run, with both
+    transactions, the response hash, and the seller output. Choose a call
+    from the S1 table or the S2 history.</p>
+    <div id="s3-detail" aria-live="polite"></div>
+  </section>
+
+  <!-- S4 — Seller console -->
+  <section class="view" id="view-s4" aria-label="Seller console">
+    <h2>Seller console</h2>
+    <p class="small">Schema-validation service
+    <span class="mono">meteredpay-schema-validate</span> (demonstrator
+    seller service, <span class="mono">tedious-sea.testnet</span>).
+    Read-only; price is fixed at contract init and shown here, never set.</p>
+    <label for="seller-buyer">Buyer account (call log)</label>
+    <input type="text" id="seller-buyer" value="freeze1011-buyer.testnet" autocomplete="off" spellcheck="false">
+    <p><button type="button" id="seller-load">Load seller call log</button></p>
+    <p class="small">Defaults to the recorded demo buyer. Enter any buyer — e.g. your own replay buyer — to see their calls here.</p>
+    <div id="seller-health" aria-live="polite"></div>
+    <div id="seller-result" aria-live="polite"></div>
+  </section>
+
+  <!-- S5 — Contract & replay -->
+  <section class="view" id="view-s5" aria-label="Contract and replay">
+    <h2>Replay it yourself — same contract: <span class="mono">apathetic-party.testnet</span></h2>
+    <div id="replay-result" aria-live="polite"></div>
+    <p class="small">Seller: <span class="mono">tedious-sea.testnet</span> ·
+    Price: <strong>0.1 testnet NEAR per successful call</strong> ·
+    Demo deposit: <strong>0.5</strong> · Budget cap: <strong>0.2</strong> ·
+    Buyer wait: <strong>30 s</strong> · Backstop: <strong>600 s</strong>.
+    All amounts are testnet NEAR with no real-world value. These are
+    contract balances: your wallet balance will differ by testnet gas paid
+    for your own transactions, shown separately on the explorer.</p>
+    <h3>Steps, in execution order — one command runs them all</h3>
+    <ol class="steps">
+      <li><strong>Deposit.</strong> Run <code>node buyer/buyer.mjs --buyer &lt;buyer&gt;.testnet --mode demo --tag demo</code> once. This one command deposits 0.5 and sets cap 0.2 first, then runs the five calls in steps 2–6 below in order — do not run it again per step. (Or deposit and set the cap yourself with the commands in README §2.5, then run the same command with <code>--skip-setup</code>.) See: deposited 0.5, held 0, spent 0, available 0.5, cap 0.2. Proof: your deposit transaction on the explorer.</li>
+      <li><strong>Success deducts.</strong> The script's first call: one success call. See: Succeeded — deducted 0.1 testnet NEAR; spent 0.1, available 0.4. Proof: deduction transaction, e.g. <a href="https://testnet.nearblocks.io/txns/BD3fkPVQNBBPjroxS85y3Bam2GK87TxDKSiFMVehC3Zd">BD3fkPVQ…</a> (canonical replay; your run has its own hash).</li>
+      <li><strong>Fail releases.</strong> The script's second call: one fail call. See: Failed — held amount released, never deducted; spent still 0.1, available still 0.4. The buyer submits a failure claim; that claim releases the hold. Proof: release transaction, e.g. <a href="https://testnet.nearblocks.io/txns/3a6juX9uJHB5fr2C9emqfR82jJD8nijCnb4k1TPwQo9e">3a6juX9u…</a>.</li>
+      <li><strong>Timeout releases.</strong> The script's third call: one timeout call; wait 30 s. See: Failed — no receipt received: held amount released, never deducted; balances unchanged. Proof: release transaction, e.g. <a href="https://testnet.nearblocks.io/txns/C2EXM52zH62Y4JZ6ZaqF6DCo2tXuhW369dYhTKnStycB">C2EXM52z…</a>.</li>
+      <li><strong>Success deducts again.</strong> The script's fourth call: one more success call. See: Succeeded — deducted 0.1; spent 0.2 (= cap), available 0.3. Proof: deduction transaction, e.g. <a href="https://testnet.nearblocks.io/txns/C34RNjN1r2MJmona6ZRYNEc6UdrVwQYTaoRdXFvkYGUb">C34RNjN1…</a>.</li>
+      <li><strong>Over budget refused.</strong> The script's fifth and last call: one more success call. See: Refused — over budget; amount 0 — refused; balances unchanged. This is a successful transaction with an on-chain refusal record. Proof: refusal transaction, e.g. <a href="https://testnet.nearblocks.io/txns/ESem4KumVHwC7FfT6TT2aqrcsi4R1jGfFt66LhDTZ2qm">ESem4Kum…</a>.</li>
+    </ol>
+    <p>Final state after steps 1–6: deposit 0.5 / held 0 / spent 0.2 / available 0.3 / cap 0.2.
+    Invariant at every step: <code>available = deposit − spent − held</code>.
+    A call that costs exactly your available budget succeeds. Shorter core:
+    <code>--mode replay</code> runs deposit, two successes, refusal only. No key, token,
+    or permission from the builder is needed; one judge's replay does not
+    disturb another's (state is per buyer). Full setup commands are in
+    README §2.3 and §2.5.</p>
+    <h3>Dispute audit — seller attestation vs buyer claim vs outcome</h3>
+    <p class="small"><strong>Detects, does not prevent.</strong> The contract
+    stores the seller-attested response hash only for success claims;
+    for failure/timeout claims it stores no seller attestation
+    (response hash is null on-chain — the frozen contract has no field
+    for it). The seller error attestation for the recorded fail call
+    is shown on S3 from the run log, not from the contract. This table
+    shows whether attestation and claim agree. It cannot stop a buyer
+    claiming failure after a genuine success — buyer dishonesty is NOT solved.</p>
+    <p class="small" id="audit-buyer-label"></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Call</th><th>Seller attestation</th><th>Buyer claim</th><th>Outcome</th><th>Balance after</th><th>Explorer</th></tr></thead>
+      <tbody id="audit-rows"><tr><td colspan="6">Loading…</td></tr></tbody>
+    </table></div>
+    <p class="small">Contract on the explorer:
+    <a href="https://testnet.nearblocks.io/address/apathetic-party.testnet">apathetic-party.testnet</a>.
+    Deploy transaction: not recorded (known gap — see README §2.7); the
+    deployment is proven by the on-chain code hash matching the built
+    wasm SHA-256 <span class="mono">c54ae8e9…</span>.</p>
+    <p class="small">Two sellers, two instances: the same wasm is also
+    deployed as <span class="mono">mp-meteredpay-a.testnet</span>
+    (seller <span class="mono">tedious-sea.testnet</span>) and
+    <span class="mono">mp-meteredpay-b.testnet</span> (seller
+    <span class="mono">mp-seller2.testnet</span>), each proven
+    end-to-end 6 Nov 2026 — see <span class="mono">MULTI_SELLER_APPENDIX.md</span>
+    in the repo. The frozen contract above remains the replay target.</p>
+  </section>
+</main>
+<footer>
+  <p>MeteredPay — testnet only. Contract
+  <span class="mono">apathetic-party.testnet</span>, seller
+  <span class="mono">tedious-sea.testnet</span>, price 0.1 testnet NEAR per
+  successful call. The demo seller is a demonstrator service; no
+  independent seller has run against the contract. Buyer dishonesty is
+  NOT solved. See <a href="./../GLOSSARY.md">GLOSSARY.md</a> and the
+  <a href="./../README.md">README</a>.</p>
+</footer>
+<script src="./config.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

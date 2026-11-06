@@ -1,0 +1,34 @@
+# MeteredPay demo video — transcript (2:00)
+
+Narration for `meteredpay-demo-2min.mp4`. Every money sentence says "testnet".
+Timings match `meteredpay-demo-2min.srt` (second pass, 5 Nov 2026: measured
+speech windows from the re-rendered audio).
+
+- 0:00 — Failed call. Deducted: zero testnet NEAR.
+- 0:05 — An agent needs one document checked before it files it. It pays 0.1 testnet NEAR — but only if the check comes back valid.
+- 0:15 — The buyer prepays testnet NEAR and sets a spending limit in the contract.
+- 0:25 — One successful call. The contract deducts exactly one call price — only because the buyer verified the success receipt.
+- 0:38 — Now a failed call. The buyer claims the failure — the held 0.1 testnet NEAR is released, never deducted.
+- 0:58 — No receipt in thirty seconds — same release, never deducted.
+- 1:03 — The receipt didn't check out, so nothing was deducted.
+- 1:10 — Second call, budget now used.
+- 1:20 — And over budget, the contract refuses the call before any money moves. The contract logged the refusal; balance unchanged.
+- 1:40 — The contract holds the deposit and refuses overspending on-chain.
+- 1:47 — Would you trust an agent that only pays for work it can prove? Replay it — repo in the replies — and tell us.
+
+## Teaser transcript (0:30, `meteredpay-teaser-30s.mp4`)
+
+- 0:00 — Failed call. Deducted: zero testnet NEAR.
+- 0:06 — One document checked on testnet. Deducted only if valid.
+- 0:12 — Successful call. Minus 0.1 testnet NEAR.
+- 0:20 — Over budget. Refused on-chain. Balance unchanged.
+- 0:26 — (silent end card) MeteredPay — apathetic-party.testnet — NEAR testnet.
+
+## Notes (second pass)
+
+- On-screen disclosure (0:00–0:10 in the 2:00, 0:00–0:06 in the teaser):
+  "Rendered dashboard frames with narration — not a live screen recording".
+- Captions are burned into the video (max 2 lines); the SRT files are sidecars.
+  No subtitle stream is embedded in either mp4 (video + audio streams only).
+- Narration for the long beats is slow gTTS re-records of the same script
+  words, split at sentence boundaries (see `video/work/assemble.py`).

@@ -1,0 +1,14 @@
+├  Logs:
+│    No logs[0m
+Function execution return value (printed to stdout):
+{
+  "call_timeout_seconds": "600",
+  "price_per_call": "100000000000000000000000",
+  "seller_account_id": "tedious-sea.testnet",
+  "seller_public_key": "ed25519:6zG7yLp2jqHxfkXfYgsL1ZXSf2NVQoRRaib6im72ubnm"
+}
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-read-only mp-meteredpay-a.testnet get_seller json-args {} network-config testnet now[39m
+

@@ -1,0 +1,45 @@
+├  Unsigned transaction:
+│    signer_id:    mp-meteredpay-a.testnet
+│    receiver_id:  mp-meteredpay-a.testnet
+│    actions:
+│       -- deploy code <EH9ZtfU7FbRNSFTDUqTZoE9gQ7jRQ5Qb7cWDoMuBRRGB> to a account <mp-meteredpay-a.testnet>
+│       -- function call:      
+│                       method name:  init
+│                       args:         {
+│                                       "call_timeout_seconds": "600",
+│                                       "price_per_call": "100000000000000000000000",
+│                                       "seller_account_id": "tedious-sea.testnet",
+│                                       "seller_public_key": "ed25519:6zG7yLp2jqHxfkXfYgsL1ZXSf2NVQoRRaib6im72ubnm"
+│                                     }
+│                       gas:          100.0 Tgas
+│                       deposit:      0 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:7cJJA4yZJ563dWeo2ki5vv7i6Gwr7QVvvYNcNUBEKPcd
+│    Signature:  ed25519:53gLNY9r619R43UBRpLZTSuo4byfniV54b4LzzYQGqD2yR9cA8zkk4yKFgLuJTp64iWz9TAh2x3tutqucsF3zGAa
+│     [0m
+├  Transaction Execution Info:
+│    Gas burned: 1.7 Tgas
+│    Transaction fee: 0.0001678232547202 NEAR
+│    Transaction ID: EXnxJ3Jne2qZf7ZbAypmxi7LUTAgJ8AZJ5R8UDyd1D3V
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/EXnxJ3Jne2qZf7ZbAypmxi7LUTAgJ8AZJ5R8UDyd1D3V
+│     [0m
+├  Function execution logs:
+│    Logs [mp-meteredpay-a.testnet]:   No logs
+│    Logs [mp-meteredpay-a.testnet]:   No logs
+│     [0m
+├  Function execution return value:
+│    Empty return value
+│     [0m
+
+Contract code has been successfully deployed.
+The "init" call to <mp-meteredpay-a.testnet> on behalf of <mp-meteredpay-a.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract deploy mp-meteredpay-a.testnet use-file target/near/meteredpay.wasm with-init-call init json-args '{"seller_account_id": "tedious-sea.testnet", "seller_public_key": "ed25519:6zG7yLp2jqHxfkXfYgsL1ZXSf2NVQoRRaib6im72ubnm", "price_per_call": "100000000000000000000000", "call_timeout_seconds": "600"}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send[39m
+

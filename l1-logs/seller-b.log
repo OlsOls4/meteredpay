@@ -1,0 +1,8 @@
+[seller] contract mp-meteredpay-b.testnet confirmed: seller=mp-seller2.testnet price=100000000000000000000000 yoctoNEAR timeout=600s
+[seller] signing as mp-seller2.testnet (ed25519:BoVrSvynnQ9Y1bKszwQaBhGA6DiKefwVtNy7KGfDSNze)
+[seller] MeteredPay demonstrator seller listening on http://127.0.0.1:8788 (testnet only, contract mp-meteredpay-b.testnet)
+[seller] /call call_id=redeploy-b-success-001 buyer=mp-l1b-buyer.testnet scenario=success schema=quote
+[seller] /call call_id=redeploy-b-fail-001 buyer=mp-l1b-buyer.testnet scenario=fail schema=quote
+[seller] /call call_id=redeploy-b-timeout-001 buyer=mp-l1b-buyer.testnet scenario=timeout schema=quote
+[seller] /call call_id=redeploy-b-success-002 buyer=mp-l1b-buyer.testnet scenario=success schema=quote
+[seller] /call call_id=xcheck-a-001 buyer=mp-l1x-buyer.testnet scenario=success schema=quote

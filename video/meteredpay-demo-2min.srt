@@ -1,0 +1,49 @@
+1
+00:00:00,400 --> 00:00:04,070
+Failed call. Deducted: zero testnet NEAR.
+
+2
+00:00:05,400 --> 00:00:14,500
+An agent needs one document checked before it files it.
+It pays 0.1 testnet NEAR — but only if the check comes back valid.
+
+3
+00:00:15,400 --> 00:00:23,720
+The buyer prepays testnet NEAR and sets a spending limit in the contract.
+
+4
+00:00:25,400 --> 00:00:36,950
+One successful call. The contract deducts exactly one call price —
+only because the buyer verified the success receipt.
+
+5
+00:00:38,400 --> 00:00:55,950
+Now a failed call. The buyer claims the failure —
+the held 0.1 testnet NEAR is released, never deducted.
+
+6
+00:00:58,100 --> 00:01:02,550
+No receipt in thirty seconds — same release, never deducted.
+
+7
+00:01:03,300 --> 00:01:09,900
+The receipt didn't check out, so nothing was deducted.
+
+8
+00:01:10,500 --> 00:01:16,960
+Second call, budget now used.
+
+9
+00:01:20,400 --> 00:01:37,410
+And over budget, the contract refuses the call before any money moves.
+The contract logged the refusal; balance unchanged.
+
+10
+00:01:40,400 --> 00:01:44,750
+The contract holds the deposit and refuses overspending on-chain.
+
+11
+00:01:47,500 --> 00:01:55,660
+Would you trust an agent that only pays for work it can prove?
+Replay it — repo in the replies — and tell us.
+

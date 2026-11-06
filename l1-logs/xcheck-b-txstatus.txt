@@ -1,0 +1,1 @@
+tx status: {"Failure": {"ActionError": {"index": 0, "kind": {"FunctionCallError": {"ExecutionError": "Smart contract panicked: Invalid seller signature"}}}}}

@@ -1,0 +1,46 @@
+├  Unsigned transaction:
+│    signer_id:    mp-l1x-buyer.testnet
+│    receiver_id:  mp-meteredpay-a.testnet
+│    actions:
+│       -- function call:      
+│                       method name:  deposit
+│                       args:         {}
+│                       gas:          100.0 Tgas
+│                       deposit:      0.5 NEAR
+│     [0m
+[33m├  Warning: no access keys found in keychain, trying legacy keychain[0m
+├  Your transaction was signed successfully.
+│    Public key: ed25519:GLvex8tq7gHDKGsL4RyqRScACQhGQZRky8VirTJuL8fC
+│    Signature:  ed25519:JCouZHNXV4enayaPHq4vUJzD1zmGDMfJqotimGSVh5bHxUF2A2LwG1gTAvvyRMciNnWZEP5DromDrwyFkQTs6N6
+│     [0m
+├  Transaction Execution Info:
+│    Gas burned: 0.309 Tgas
+│    Transaction fee: 0.0000308488653435 NEAR
+│    Transaction ID: Dh1oVsWeFU5TaD7Fw9kttJqZ2FSHmugDuzjAXL64qtmQ
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/Dh1oVsWeFU5TaD7Fw9kttJqZ2FSHmugDuzjAXL64qtmQ
+│     [0m
+├  Function execution logs:
+│    Logs [mp-meteredpay-a.testnet]:   No logs
+│    Logs [mp-l1x-buyer.testnet]:   No logs
+│     [0m
+
+Function execution return value (printed to stdout):
+{
+  "account_id": "mp-l1x-buyer.testnet",
+  "available": "500000000000000000000000",
+  "budget_cap": "500000000000000000000000",
+  "deposit": "500000000000000000000000",
+  "held": "0",
+  "spent": "0"
+}
+
+
+The "deposit" call to <mp-meteredpay-a.testnet> on behalf of <mp-l1x-buyer.testnet> succeeded.
+
+
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear contract call-function as-transaction mp-meteredpay-a.testnet deposit json-args {} prepaid-gas '100.0 Tgas' attached-deposit '0.5 NEAR' sign-as mp-l1x-buyer.testnet network-config testnet sign-with-keychain send[39m
+

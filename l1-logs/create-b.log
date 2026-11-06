@@ -1,0 +1,21 @@
+├  Your transaction:
+│    signer_id:    testnet
+│    actions:
+│       -- create account:      mp-meteredpay-b.testnet
+│       -- add access key:     
+│                       public key:   ed25519:EhjVhU15xMbwBAZk88Jha7Q5tidaSUuVrJtmP4qaLbKS
+│                       permission:   FullAccess
+│     [0m
+├  Transaction Execution Info:
+│    Transaction ID: 6mNPVGFDkkaZLsQFTv5bmPw5P9bpgbHt9y9wzR2pBNx8
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/6mNPVGFDkkaZLsQFTv5bmPw5P9bpgbHt9y9wzR2pBNx8
+[0m
+New account <mp-meteredpay-b.testnet> created successfully.
+The data for the access key is saved in a file /home/hatch/.near-credentials/testnet/mp-meteredpay-b.testnet/ed25519_EhjVhU15xMbwBAZk88Jha7Q5tidaSUuVrJtmP4qaLbKS.json
+The data for the access key is saved in a file /home/hatch/.near-credentials/testnet/mp-meteredpay-b.testnet.json
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear account create-account sponsor-by-faucet-service mp-meteredpay-b.testnet autogenerate-new-keypair --signature-scheme ed25519 save-to-legacy-keychain network-config testnet create[39m
+

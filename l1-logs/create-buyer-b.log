@@ -1,0 +1,24 @@
+├  Your transaction:
+│    signer_id:    testnet
+│    actions:
+│       -- create account:      mp-l1b-buyer.testnet
+│       -- add access key:     
+│                       public key:   ed25519:Hw7mYXqPALr5GmMENtA7gFuPFcoFjWArdJfe9X7Mtzb9
+│                       permission:   FullAccess
+│     [0m
+├  Transaction Execution Info:
+│    Transaction ID: AuFcNTAyi7ApyhE9AB1XzDUtPopReksJmn4vTFpdsLhz
+│    To see the transaction in the transaction explorer, please open this url in your browser:
+│    https://explorer.testnet.near.org/transactions/AuFcNTAyi7ApyhE9AB1XzDUtPopReksJmn4vTFpdsLhz
+[0m
+New account <mp-l1b-buyer.testnet> created successfully.
+The data for the access key is saved in a file /home/hatch/.near-credentials/testnet/mp-l1b-buyer.testnet/ed25519_Hw7mYXqPALr5GmMENtA7gFuPFcoFjWArdJfe9X7Mtzb9.json
+The data for the access key is saved in a file /home/hatch/.near-credentials/testnet/mp-l1b-buyer.testnet.json
+
+
+Here is your console command if you need to script it or re-run:
+    [33mnear account create-account sponsor-by-faucet-service mp-l1b-buyer.testnet autogenerate-new-keypair --signature-scheme ed25519 save-to-legacy-keychain network-config testnet create[39m
+
+
+`near` CLI has a new update available [2m0.30.1[0m →  [32m0.31.1[0m
+To update `near` CLI use: [33mnear extensions self-update[39m

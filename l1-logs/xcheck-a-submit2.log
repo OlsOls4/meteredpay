@@ -1,0 +1,11 @@
+tx_hash=5716147fd378df39d13c6c2ed9d2c7babdf4b9e4b7a99eb5870b8a35669e3ae3
+sent, waiting for final status...
+file:///tmp/xcheck-submit.mjs:18
+const out = await provider.txStatus(Buffer.from(hash).toString('hex'), buyer, 'FINAL');
+                           ^
+
+TypeError: provider.txStatus is not a function
+    at file:///tmp/xcheck-submit.mjs:18:28
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+Node.js v24.22.1

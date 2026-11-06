@@ -1,0 +1,1 @@
+{"dependencies":{"near-api-js":"^7.4.0"},"description":"MeteredPay buyer script (NEAR testnet only) — drives the demo flow against the frozen contract and the demonstrator seller API.","license":"UNLICENSED","main":"buyer.mjs","name":"meteredpay-buyer","private":true,"type":"module","version":"1.0.0"}
