@@ -57,11 +57,40 @@ const cannedViews = {
 };
 function cannedFetch(url, opts) {
   fetchCalls.push(url);
+  // S6 manifest: served as a static file in production.
+  if (typeof url === 'string' && url.endsWith('two-seller.json')) {
+    const man = readFileSync(join(HERE, 'two-seller.json'), 'utf8');
+    return Promise.resolve({ json: () => Promise.resolve(JSON.parse(man)) });
+  }
   // Seller /health check carries no RPC body.
   if (!opts || !opts.body) {
     return Promise.resolve({ json: () => Promise.resolve({ status: 'ok', seller_account_id: 'tedious-sea.testnet', price_per_call_yocto: '100000000000000000000000', mode: 'demo' }) });
   }
   const body = JSON.parse(opts.body);
+  // S6 per-instance canned views (live 8 Nov 2026 RPC values).
+  const acct = body.params.account_id;
+  if (acct === 'mp-meteredpay-a.testnet' || acct === 'mp-meteredpay-b.testnet') {
+    const isA = acct.endsWith('-a.testnet');
+    const seller = isA ? 'tedious-sea.testnet' : 'mp-seller2.testnet';
+    const key = isA ? 'ed25519:6zG7yLp2jqHxfkXfYgsL1ZXSf2NVQoRRaib6im72ubnm' : 'ed25519:BoVrSvynnQ9Y1bKszwQaBhGA6DiKefwVtNy7KGfDSNze';
+    const pfx = isA ? 'redeploy-a' : 'redeploy-b';
+    const buyer = isA ? 'mp-l1a-buyer.testnet' : 'mp-l1b-buyer.testnet';
+    const m = body.params.method_name;
+    let data = {};
+    if (m === 'get_seller') data = { seller_account_id: seller, seller_public_key: key, price_per_call: '100000000000000000000000', call_timeout_seconds: 600 };
+    else if (m === 'get_seller_balance') data = { seller_account_id: seller, earned: '200000000000000000000000', withdrawn: '0' };
+    else if (m === 'get_buyer_balance') data = { account_id: buyer, deposit: '500000000000000000000000', held: '0', spent: '200000000000000000000000', available: '300000000000000000000000', budget_cap: '200000000000000000000000' };
+    else if (m === 'list_calls') data = [
+      { call_id: pfx + '-overbudget-001', status: 'refused', price: '100000000000000000000000', response_hash: null, failure_reason: null, proposed_height: 200005, resolved_height: 200006 },
+      { call_id: pfx + '-success-002', status: 'success-deducted', price: '100000000000000000000000', response_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', failure_reason: null, proposed_height: 200003, resolved_height: 200004 },
+      { call_id: pfx + '-timeout-001', status: 'timeout-refunded', price: '100000000000000000000000', response_hash: null, failure_reason: 'timeout', proposed_height: 200002, resolved_height: 200003 },
+      { call_id: pfx + '-fail-001', status: 'failed-refunded', price: '100000000000000000000000', response_hash: null, failure_reason: 'seller_error', proposed_height: 200001, resolved_height: 200002 },
+      { call_id: pfx + '-success-001', status: 'success-deducted', price: '100000000000000000000000', response_hash: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc', failure_reason: null, proposed_height: 200000, resolved_height: 200001 },
+    ];
+    else if (m === 'list_refusals') data = [{ call_id: pfx + '-overbudget-001', reason: 'over_budget', price: '100000000000000000000000', deposit: '500000000000000000000000', spent: '200000000000000000000000', held: '0', budget_cap: '200000000000000000000000' }];
+    const payload = Buffer.from(JSON.stringify(data), 'utf8');
+    return Promise.resolve({ json: () => Promise.resolve({ result: { result: Array.from(payload) } }) });
+  }
   const data = cannedViews[body.params.method_name] || {};
   const payload = Buffer.from(JSON.stringify(data), 'utf8');
   return Promise.resolve({ json: () => Promise.resolve({ result: { result: Array.from(payload) } }) });
@@ -483,6 +512,186 @@ check('S2 Load button is re-enabled after loading', els['buyer-load'].disabled =
 mp.renderS3('freeze1011-success-001');
 check('U-F8 S3 has a Make another call link to S2',
   els['s3-detail'].innerHTML.includes('<a href="#/s2">Make another call</a>'));
+
+// --- Test 21: S6 two-seller manifest vs appendix vs static Layer 1 ---
+{
+  const man = JSON.parse(readFileSync(join(HERE, 'two-seller.json'), 'utf8'));
+  const appendix = readFileSync(join(HERE, '..', 'MULTI_SELLER_APPENDIX.md'), 'utf8');
+  const indexHtml = readFileSync(join(HERE, 'index.html'), 'utf8');
+  check('S6 manifest has two instances A + B', man.instances.length === 2 &&
+    man.instances[0].contract === 'mp-meteredpay-a.testnet' && man.instances[1].contract === 'mp-meteredpay-b.testnet');
+  check('S6 manifest sellers/buyers match the appendix',
+    man.instances[0].seller === 'tedious-sea.testnet' && man.instances[0].buyer === 'mp-l1a-buyer.testnet' &&
+    man.instances[1].seller === 'mp-seller2.testnet' && man.instances[1].buyer === 'mp-l1b-buyer.testnet');
+  for (const inst of man.instances) {
+    const f = inst.final_state;
+    check('S6 manifest instance ' + inst.id + ' final state is 0.5/0/0.2/0.3/0.2',
+      f.deposit === '0.5' && f.held === '0' && f.spent === '0.2' && f.available === '0.3' && f.cap === '0.2');
+    check('S6 manifest instance ' + inst.id + ' earned 0.2', inst.seller_balance.earned === '0.2' && inst.seller_balance.withdrawn === '0');
+    check('S6 manifest instance ' + inst.id + ' has 11 steps', inst.steps.length === 11);
+  }
+  check('S6 manifest wasm SHA-256 + code hash match the appendix',
+    appendix.includes(man.wasm_sha256) && appendix.includes(man.code_hash));
+  check('S6 cross-seller panic is verbatim Invalid seller signature',
+    man.cross_seller.panic === 'Invalid seller signature' && appendix.includes('Invalid seller signature'));
+  const txs = [];
+  for (const inst of man.instances) {
+    txs.push(inst.account_creation_tx, inst.deploy_init_tx, inst.buyer_creation_tx);
+    inst.steps.forEach((s) => txs.push(s.tx));
+  }
+  txs.push(man.cross_seller.buyer_creation_tx);
+  for (const c of man.cross_seller.checks) { txs.push(c.rejected_tx, ...c.setup_txs); }
+  for (const h of txs) {
+    check('S6 manifest tx ' + h.slice(0, 8) + ' appears in the appendix', appendix.includes(h));
+    check('S6 manifest tx ' + h.slice(0, 8) + ' appears in static Layer 1 HTML', indexHtml.includes(h));
+  }
+  check('S6 honesty header is verbatim in index.html',
+    indexHtml.includes('Two instances, one seller each — NOT one contract with two sellers. No buyer deposit is shared across sellers (that needs a code change, Path B, not done). The seller APIs ran on localhost (127.0.0.1:8787 / :8788) for the proof runs and are stopped now, so no live call can be made from this page. The frozen contract apathetic-party.testnet remains the judge-replay target.'));
+  check('S1 strip names both sellers paid with earned 0.2',
+    indexHtml.includes('Two sellers have now been paid') && indexHtml.includes('mp-meteredpay-a.testnet') &&
+    indexHtml.includes('mp-meteredpay-b.testnet') && indexHtml.includes('first deduction ever paid to this seller'));
+  check('S6 Layer 1 states held 0.1 intact, spent 0 after the rejections',
+    indexHtml.includes('held 0.1 intact, spent 0 on both instances afterwards'));
+  check('Nav uses plain labels incl. Two sellers',
+    indexHtml.includes('>Start</a>') && indexHtml.includes('>Buyer</a>') && indexHtml.includes('>Receipt</a>') &&
+    indexHtml.includes('>Seller</a>') && indexHtml.includes('>Replay</a>') && indexHtml.includes('>Two sellers</a>') &&
+    !indexHtml.includes('S1 Judge start'));
+  const flatHtml = indexHtml.replace(/\s+/g, ' ');
+  check('Footer qualifies no independent seller ran against this (frozen) contract',
+    flatHtml.includes('no independent seller has run against this (frozen) contract'));
+}
+
+// --- Test 22: S6 live panels — both instances live, earned 0.2 each ---
+{
+  ctx.location.hash = '#/s6';
+  fetchCalls = [];
+  mp.route();
+  await new Promise((r) => setTimeout(r, 500));
+  const a = els['s6-live-a'].innerHTML, b = els['s6-live-b'].innerHTML;
+  check('S6 panel A shows live seller + earned 0.2 + recorded match',
+    a.includes('tedious-sea.testnet') && a.includes('matches the recorded final state') && a.includes('<dt>Spent</dt><dd>0.2</dd>'));
+  check('S6 panel B shows live seller + earned 0.2 + recorded match',
+    b.includes('mp-seller2.testnet') && b.includes('matches the recorded final state') && b.includes('<dt>Spent</dt><dd>0.2</dd>'));
+  check('S6 live reads hit both instances (per-instance RPC)',
+    fetchCalls.filter((u) => typeof u === 'string' && u.includes('fastnear')).length >= 8);
+  const claims = els['s6-claims'].innerHTML;
+  check('S6 claims show per-buyer failure-claim rate 25% (1 of 4 settled)',
+    claims.includes('mp-l1a-buyer.testnet') && claims.includes('mp-l1b-buyer.testnet') && claims.includes('Failure-claim rate 25%'));
+  check('S6 claims link the recorded claim txs',
+    claims.includes('4zbBApT79cUWx8R27CyjbwEL6DCrDLZy9bZvo2QepyY8') && claims.includes('82j8wT9ihtH9SzAYKuUtBm7TcjAy3NWxnrPvxqFYrD8u'));
+  ctx.location.hash = '#/s1';
+  mp.route();
+}
+
+// --- Test 23: S6 one-instance RPC failure — other panel unaffected,
+// failed panel shows recorded state, never a 0/— balance ------------
+{
+  const realFetch = ctx.fetch;
+  ctx.fetch = (url, opts) => {
+    if (opts && opts.body) {
+      const p = JSON.parse(opts.body).params;
+      if (p.account_id === 'mp-meteredpay-b.testnet') return Promise.reject(new Error('rpc down'));
+    }
+    return cannedFetch(url, opts);
+  };
+  mp.loadTwoSellers();
+  await new Promise((r) => setTimeout(r, 500));
+  const a = els['s6-live-a'].innerHTML, b = els['s6-live-b'].innerHTML;
+  check('S6 instance A still live when B RPC fails', a.includes('matches the recorded final state'));
+  check('S6 instance B shows failure banner + recorded 6 Nov state',
+    b.includes('Live read failed') && b.includes('recorded 6 Nov state'));
+  check('S6 instance B recorded state shows the five numbers, not a blank/zero balance',
+    b.includes('<dt>Spent</dt><dd>0.2</dd>') && b.includes('<dt>Available</dt><dd>0.3</dd>'));
+  check('S6 instance B failure names the missing reads', b.includes('could not be loaded') || b.includes('Live read failed'));
+  ctx.fetch = realFetch;
+}
+
+// --- Test 24: S6 both instances down — Layer 1 intact, panels fall back
+{
+  const realFetch = ctx.fetch;
+  ctx.fetch = (url, opts) => {
+    if (opts && opts.body) return Promise.reject(new Error('rpc down'));
+    return cannedFetch(url, opts);
+  };
+  mp.loadTwoSellers();
+  await new Promise((r) => setTimeout(r, 500));
+  check('S6 both-down: panel A falls back to recorded state',
+    els['s6-live-a'].innerHTML.includes('Live read failed') && els['s6-live-a'].innerHTML.includes('<dt>Spent</dt><dd>0.2</dd>'));
+  check('S6 both-down: panel B falls back to recorded state',
+    els['s6-live-b'].innerHTML.includes('Live read failed') && els['s6-live-b'].innerHTML.includes('<dt>Spent</dt><dd>0.2</dd>'));
+  check('S6 both-down: claims fall back to the recorded summary, not blank',
+    els['s6-claims'].innerHTML.includes('recorded 6 Nov state'));
+  const indexHtml = readFileSync(join(HERE, 'index.html'), 'utf8');
+  check('S6 Layer 1 is static HTML (present with no RPC at all)',
+    indexHtml.includes('6rwzrNiTTQcpbvxyHKA6NUHr1GVX4n98ecEAXqdEoriv') && indexHtml.includes('GFE7wB5JgukJ58Aho5RgmXBMi12uEL1pD1xCTnJfiNTB'));
+  ctx.fetch = realFetch;
+}
+
+// --- Test 25: D1 claimStats distinguishes 100% vs 0% failure-claim buyers;
+// S4 claims render live ----------------------------------------------
+{
+  const allFail = mp.claimStats([{ status: 'failed-refunded' }, { status: 'failed-refunded' }]);
+  const noneFail = mp.claimStats([{ status: 'success-deducted' }, { status: 'success-deducted' }]);
+  check('D1 100% failure-claim buyer flags all-failure at rate 1',
+    allFail.flag === 'all-failure' && allFail.failureClaimRate === 1);
+  check('D1 0% failure-claim buyer flags no-failure at rate 0',
+    noneFail.flag === 'no-failure' && noneFail.failureClaimRate === 0);
+  check('D1 the two flags differ', allFail.flag !== noneFail.flag);
+  els['seller-buyer'].value = 'freeze1011-buyer.testnet';
+  mp.loadSeller();
+  await new Promise((r) => setTimeout(r, 300));
+  const sc = els['seller-claims'].innerHTML;
+  // Canned S2 list_calls has 2 successes + 1 failure claim, no timeout
+  // (the timeout call is not in the canned set) → 1 of 3 settled = 33%.
+  check('D1 S4 claims name the buyer + rate 33% + claim tx',
+    sc.includes('Buyer claim transparency') && sc.includes('freeze1011-buyer.testnet') &&
+    sc.includes('Failure-claim rate 33%') && sc.includes('3a6juX9uJHB5fr2C9emqfR82jJD8nijCnb4k1TPwQo9e'));
+}
+
+// --- Test 26: quick-wins bundle --------------------------------------
+{
+  const indexHtml = readFileSync(join(HERE, 'index.html'), 'utf8');
+  const appJs = readFileSync(join(HERE, 'app.js'), 'utf8');
+  check('F2 S4 shows the neutral always-true state line, no auto failure banner',
+    indexHtml.includes('Demonstrator seller API: local only') && indexHtml.includes('not hosted; it ran for the recorded runs and is stopped now'));
+  check('F2 health check is behind an explicit button',
+    indexHtml.includes('id="seller-health-btn"') && indexHtml.includes('Check seller on this machine'));
+  const loadSellerBody = appJs.slice(appJs.indexOf('function loadSeller()'), appJs.indexOf('function checkSellerHealth()'));
+  check('F2 loadSeller never auto-probes the seller API', !loadSellerBody.includes('checkSellerHealth'));
+  check('F3 S1 concrete-call block shows the real input/output + hash',
+    indexHtml.includes('MeteredPay demo call freeze1011-success-001: pay per successful call, nothing for a failure.') &&
+    indexHtml.includes('word_count:12, char_count:92') && indexHtml.includes('58aa417c'));
+  check('F3 S1 states 92 is correct and 89 is a different document',
+    indexHtml.includes('char_count 92 is correct') && indexHtml.includes('89 characters'));
+  check('F6 copy buttons on the S2 + S5 demo commands (copy the command text)',
+    indexHtml.includes('data-copy-from="s2-demo-cmd"') && indexHtml.includes('data-copy-from="s5-demo-cmd"') &&
+    appJs.includes("data-copy-from") && appJs.includes('copyText(src.textContent, b)'));
+  check('R-D1 S5 block links Test 5 backstop tx', indexHtml.includes('7C72vYNfthZJpCiQXN7dHwYDu1UriNWQJaikfHkXX5CE'));
+  check('R-D1 S5 block records the pre-deadline rejection honestly (no invented tx)',
+    indexHtml.includes('Call has not expired yet') && indexHtml.includes('No tx hash recorded in BUILD_NOTES.md'));
+  for (const h of ['8W7EQs94SoFk9JvvYaJ2nvewqRDq2NNYWbaSwNtu5DxS', '7rEaW3AntDRHynYDxi1JWiTDCtyzM4VYyMYC4d5PgGU7', 'HU4Shwfico9Uz3yiuZxR4qRnRnmjWR5Q3wAKEAckasSV', '2wQS4QAdJR8zLa9HSqYTHzHyTH9GtbsBvz9WPtWEtVHX']) {
+    check('R-D1 S5 block links tamper tx ' + h.slice(0, 8), indexHtml.includes(h));
+  }
+  check('R-D1 dishonest-buyer row is a clearly-marked placeholder, no invented tx',
+    indexHtml.includes('Dishonest-buyer demonstration — tx pending') && indexHtml.includes('No tx invented'));
+  check('Human-stakes strip is labelled illustrative only',
+    indexHtml.includes('pays for 100 failures a day') && indexHtml.includes('Illustrative only — no real usage data'));
+  check('stakesYear(1000, 10, 0.01) is 365', mp.stakesYear(1000, 10, 0.01) === 365);
+  els['stakes-calls'].value = '1000';
+  els['stakes-rate'].value = '10';
+  els['stakes-price'].value = '0.01';
+  mp.stakesCalc();
+  check('Stakes calculator computes £365/year for the prefilled 1-in-10 figure',
+    els['stakes-result'].textContent.includes('£365') && els['stakes-result'].textContent.includes('Illustrative only'));
+  // F4: plain #/s2 auto-loads the prefilled demo buyer on first entry.
+  ctx.location.hash = '#/s2';
+  mp.route();
+  await new Promise((r) => setTimeout(r, 300));
+  check('F4 plain #/s2 auto-loads the demo buyer balance',
+    els['buyer-result'].innerHTML.includes('<dt>Deposited</dt>') && els['buyer-result'].innerHTML.includes('<dt>Spent</dt><dd>0.2</dd>'));
+  ctx.location.hash = '#/s1';
+  mp.route();
+}
 
 if (failures.length) { console.error('VERIFY FAILED: ' + failures.join('; ')); process.exit(1); }
 console.log('DASHBOARD VERIFY OK');

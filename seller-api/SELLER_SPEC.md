@@ -183,7 +183,8 @@ cannot receive a deduction from the frozen contract** — its key is not the one
 stored at init. This spec is the interface for a redeployed contract
 or a future multi-seller version, and for the demonstrator seller
 itself. Do not promise same-contract onboarding. Price is fixed at
-contract init; there is no set-price.
+contract init; there is no set-price. New sellers start here:
+`../SELLER_ONBOARDING.md` (deploy-your-own-instance runbook).
 
 ### A2. Worked example (verify your implementation against this before testing live)
 

@@ -30,7 +30,15 @@
 //                   [--deposit 0.5] [--cap 0.2] [--mode demo|replay|single]
 //                   [--tag demo] [--allow-existing] [--skip-setup]
 //                   [--scenario success|fail|timeout] [--schema <name>]
-//                   [--document '<json>']
+//                   [--document '<json>'] [--service validate|summarise]
+// Service selection (wave 5, R-F2): --service summarise (or env
+// MP_SERVICE=summarise) drives the deterministic extractive
+// summariser seller instead of the schema-validate seller, reusing
+// the identical receipt flow (canonical body hash, buyer-verified,
+// payer-signed). Default validate is the frozen demo path and is
+// unchanged. Summarise demo inputs are a long fixed text (success)
+// and a short text (fail = INPUT_TOO_SHORT, the service's own
+// failure mode, not DEMO_SELLER_ERROR).
 // --skip-setup: skip the script's deposit + set_budget_cap and assert
 //   a manual deposit/cap (near-cli, README §2.5 Step 1) already
 //   matches --deposit/--cap.
@@ -109,6 +117,8 @@ const SCENARIO = opt('scenario', 'success');
 if (MODE === 'single' && !['success', 'fail', 'timeout'].includes(SCENARIO)) { console.error('single-mode scenario must be success, fail, or timeout'); process.exit(2); }
 const SINGLE_SCHEMA = opt('schema', 'quote');
 const SINGLE_DOCUMENT = opt('document', null); // JSON string, single mode only
+const SERVICE = process.env.MP_SERVICE || opt('service', 'validate');
+if (!['validate', 'summarise'].includes(SERVICE)) { console.error('service must be validate or summarise'); process.exit(2); }
 const SKIP_SETUP = has('skip-setup'); // skip deposit+cap; assert the manual ones match instead (README §2.5 Step 1)
 const SINGLE = MODE === 'single';
 // U-F5 --api guard state (see probeSellerEndpoint below). Declared
@@ -227,10 +237,25 @@ async function requestCall(id) {
 // { schema: 'quote', document: { text } }. A caller may override the
 // input (single mode --schema/--document). The legacy bare
 // { text } shape is accepted by the seller as the quote schema.
+// Service selection (wave 5, R-F2): --service summarise sends the
+// summariser's { text } shape instead — a fixed long text (success)
+// whose summary is deterministic. The frozen validate path above is
+// unchanged.
+function summariseText(callId) {
+  return `MeteredPay charges a small fixed price for each successful service call, and nothing for a failure. The buyer deposits testnet NEAR into a contract, sets a budget cap, and requests a call from a registered seller. The seller serves the response and signs an attestation that it served that response for that call. The buyer verifies the response hash and the seller signature before signing any payment authorisation. Only a buyer-verified, payer-signed success receipt can deduct money from the deposit on chain. A failed call releases the held amount instead of deducting it, and a call that times out releases the held amount too. Call ${callId} exercises this flow against the extractive summariser service.`;
+}
 function defaultInput(callId) {
+  if (SERVICE === 'summarise') return { text: summariseText(callId) };
   return { schema: 'quote', document: { text: `MeteredPay demo call ${callId}: pay per successful call, nothing for a failure.` } };
 }
 function singleInput(callId) {
+  if (SERVICE === 'summarise') {
+    if (!SINGLE_DOCUMENT) return { text: summariseText(callId) };
+    let doc;
+    try { doc = JSON.parse(SINGLE_DOCUMENT); } catch { throw new Error('--document must be valid JSON'); }
+    if (typeof doc.text === 'string') return { text: doc.text };
+    throw new Error('--document for the summariser must be JSON { text }');
+  }
   if (!SINGLE_DOCUMENT) return { schema: SINGLE_SCHEMA, document: { text: `MeteredPay single call ${callId}: pay per successful call, nothing for a failure.` } };
   let doc;
   try { doc = JSON.parse(SINGLE_DOCUMENT); } catch { throw new Error('--document must be valid JSON'); }
@@ -394,7 +419,12 @@ async function doFailure(callId, inputOverride) {
   await showBal(`after request ${callId} (price held)`);
   let resp;
   try {
-    resp = await apiCall(callId, 'fail', inputOverride);
+    // Summariser (wave 5, R-F2): the service's own failure mode is
+    // input too short/empty — exercise it with a short text under
+    // scenario success, not the demonstrator DEMO_SELLER_ERROR.
+    resp = SERVICE === 'summarise'
+      ? await apiCall(callId, 'success', { text: 'Too short.' })
+      : await apiCall(callId, 'fail', inputOverride);
     noteEndpointSeller(resp); // U-F5: record the endpoint's seller from its own response
   } catch (e) {
     // Seller unreachable mid-fail-call: do NOT throw with the price
@@ -467,7 +497,7 @@ async function expectRefusal(callId, reason) {
 // --- main ----------------------------------------------------------------------
 console.log(`MeteredPay buyer script — ${MODE} mode — TESTNET ONLY (contract ${CONTRACT})`);
 console.log(`Buyer: ${BUYER} (public key ${buyerKey.publicKey}) — never prints a private key.`);
-console.log(`Seller API: ${API} | Deposit: ${DEPOSIT_NEAR} testnet NEAR | Cap: ${CAP_NEAR} testnet NEAR`);
+console.log(`Seller API: ${API} | Service: ${SERVICE} | Deposit: ${DEPOSIT_NEAR} testnet NEAR | Cap: ${CAP_NEAR} testnet NEAR`);
 sellerInfo = await view('get_seller', {});
 console.log(`Contract: seller=${sellerInfo.seller_account_id} price=${fmtNear(sellerInfo.price_per_call)} timeout=${sellerInfo.call_timeout_seconds}s`);
 if (sellerInfo.seller_account_id !== SELLER) throw new Error(`Contract seller ${sellerInfo.seller_account_id} != ${SELLER}`);
@@ -536,7 +566,7 @@ if (MODE === 'single') {
   if (SCENARIO === 'success') singleResult = await doSuccess(callId, input);
   else if (SCENARIO === 'fail') singleResult = await doFailure(callId, input);
   else singleResult = await doTimeout(callId);
-  singleResult = { ...singleResult, call_id: callId, scenario: SCENARIO, schema: input.schema };
+  singleResult = { ...singleResult, call_id: callId, scenario: SCENARIO, service: SERVICE, schema: input.schema || (SERVICE === 'summarise' ? 'summarise' : SINGLE_SCHEMA) };
 } else if (MODE === 'replay') {
   await doSuccess(`${TAG}-success-1`);
   await doSuccess(`${TAG}-success-2`);
@@ -557,7 +587,7 @@ log('final', { bal: finalBal, seller: sellerBal, seller_registered: sellerRegist
 if (SINGLE) {
   singleOut({
     mode: 'single', buyer: BUYER, ok: true, call_id: singleResult.call_id,
-    scenario: singleResult.scenario, schema: singleResult.schema,
+    scenario: singleResult.scenario, service: SERVICE, schema: singleResult.schema,
     outcome: singleResult.outcome,
     // U-F5: explicit --api guard signal. false = the endpoint named
     // a seller other than the one registered on the contract (the

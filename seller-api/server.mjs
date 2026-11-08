@@ -50,11 +50,15 @@
 // frozen 0.1 testnet NEAR) is used and the startup log says so.
 //
 // Run:  node server.mjs            (listens on 127.0.0.1:8787)
-// Env:  PORT, HOST, SELLER_ACCOUNT_ID, SELLER_KEY_PATH, CONTRACT_ID,
-//       PRICE_YOCTO, RPC_URL. No dependencies; Node >= 18.
+// Env:  PORT, HOST, SELLER_ACCOUNT_ID, SELLER_KEY_PATH, SELLER_KEY_JSON,
+//       CONTRACT_ID, PRICE_YOCTO, RPC_URL. No dependencies; Node >= 18.
+//       SELLER_KEY_JSON (hosted mode, e.g. a Render env var) holds the
+//       whole credential-file JSON; see the key-loading code below.
+//       On Render set HOST=0.0.0.0 (PORT comes from Render's $PORT).
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
-import { homedir } from 'node:os';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { canonicalStringify, successBody, errorBody, responseHash, sellerAttestationMessage, sellerErrorMessage } from '../shared/canonical.mjs';
 import { ed25519Sign, loadTestnetKey } from '../shared/ed25519.mjs';
@@ -104,7 +108,17 @@ try {
   console.log(`[seller] WARNING: could not confirm contract via RPC (${e.message}); starting with configured price=${priceYocto} yoctoNEAR — verify against the contract before demoing.`);
 }
 
-const keyPath = process.env.SELLER_KEY_PATH || join(homedir(), '.near-credentials', 'testnet', SELLER_ACCOUNT_ID + '.json');
+let keyPath = process.env.SELLER_KEY_PATH || join(homedir(), '.near-credentials', 'testnet', SELLER_ACCOUNT_ID + '.json');
+if (process.env.SELLER_KEY_JSON) {
+  // Hosted mode (e.g. a Render env var): the whole credential-file JSON
+  // arrives as an env var. Write it to a mode-600 temp file at startup
+  // and use that path; the key content is never logged. Key-handling
+  // note: seller-api/RENDER_HOSTING.md.
+  const dir = mkdtempSync(join(tmpdir(), 'meteredpay-seller-key-'));
+  keyPath = join(dir, SELLER_ACCOUNT_ID + '.json');
+  writeFileSync(keyPath, process.env.SELLER_KEY_JSON, { mode: 0o600 });
+  console.log('[seller] seller key loaded from SELLER_KEY_JSON env var (mode-600 temp file; key never logged)');
+}
 const sellerKey = loadTestnetKey(SELLER_ACCOUNT_ID, keyPath);
 if (sellerPublicKey && sellerKey.publicKey !== sellerPublicKey) {
   throw new Error('Seller credential public key does not match the key registered on the contract — refusing to start.');

@@ -1,4 +1,4 @@
-MeteredPay demo video — narration transcript (Pleased Skylight voice, speed 92, 6 Nov 2026, v3.1).
+MeteredPay demo video — narration transcript (Pleased Skylight voice, speed 92, 6 Nov 2026, v3.2 frame-only patch 8 Nov 2026).
 Recorded run: buyer mp-video05.testnet, 5 Nov 2026; tamper beat: buyer mp-tamper05.testnet.
 Narration: synthetic voiceover. TTS input spells the brand "Metered Pay" (spaced) for pronunciation;
 captions and on-screen text use "MeteredPay".

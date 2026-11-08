@@ -17,11 +17,12 @@
   <noscript><p class="banner"><strong>JavaScript is off.</strong> This dashboard needs JavaScript to render the recorded run and live balances. The same recorded run is written up in README §2.5.</p></noscript>
   <p class="banner" id="js-warning"><strong>JavaScript is still loading.</strong> If this message stays, JavaScript failed to load — the recorded run is written up in README §2.5.</p>
   <nav class="views" aria-label="Dashboard views">
-    <a href="#/s1">S1 Judge start</a>
-    <a href="#/s2">S2 Buyer console</a>
-    <a href="#/s3">S3 Call receipt</a>
-    <a href="#/s4">S4 Seller console</a>
-    <a href="#/s5">S5 Contract &amp; replay</a>
+    <a href="#/s1">Start</a>
+    <a href="#/s2">Buyer</a>
+    <a href="#/s3">Receipt</a>
+    <a href="#/s4">Seller</a>
+    <a href="#/s5">Replay</a>
+    <a href="#/s6">Two sellers</a>
   </nav>
   <div id="live" class="sr-only" aria-live="polite"></div>
 
@@ -49,6 +50,21 @@
       <div class="proof-card"><span class="badge amber">Failed</span><p>Refunded — held amount released, never deducted. The buyer submits a failure claim; that claim releases the hold.</p></div>
       <div class="proof-card"><span class="badge neutral">Refused</span><p>Over budget — refused on-chain. A successful transaction with an on-chain refusal record; balances unchanged.</p></div>
     </div>
+    <h3>Two sellers have now been paid — on two instances of the same contract</h3>
+    <div class="proof-cards">
+      <div class="proof-card"><strong>A — <span class="mono">mp-meteredpay-a.testnet</span></strong><p>Seller <span class="mono">tedious-sea.testnet</span> · earned <strong>0.2 testnet NEAR</strong> · buyer <span class="mono">mp-l1a-buyer.testnet</span> · final 0.5 / 0 / 0.2 / 0.3 / 0.2</p></div>
+      <div class="proof-card"><strong>B — <span class="mono">mp-meteredpay-b.testnet</span></strong><p>Seller <span class="mono">mp-seller2.testnet</span> · earned <strong>0.2 testnet NEAR</strong> · buyer <span class="mono">mp-l1b-buyer.testnet</span> · final 0.5 / 0 / 0.2 / 0.3 / 0.2 (first deduction ever paid to this seller)</p></div>
+    </div>
+    <p class="small">Same wasm on all three contracts — SHA-256 <span class="mono">c54ae8e9…</span>, code hash <span class="mono">EH9ZtfU7…</span>. Full two-seller view: <a href="#/s6">Two sellers</a>.</p>
+    <h3>One call, concretely</h3>
+    <p class="small">What the buyer actually bought in the recorded run's first call (<span class="mono">freeze1011-success-001</span>):</p>
+    <p><strong>Input</strong> <code>{"schema":"quote","document":{"text":"MeteredPay demo call freeze1011-success-001: pay per successful call, nothing for a failure."}}</code></p>
+    <p><strong>Output</strong> <code>valid:true, word_count:12, char_count:92</code> · <strong>Response hash</strong> <span class="mono">58aa417c…19b65be</span> <button type="button" class="secondary" data-copy="58aa417c4bd47cec7d786f9381fb8a54aeb08585933b06f692afe2fab19b65be">Copy</button></p>
+    <p class="small">char_count 92 is correct for this freeze1011 recorded-run document (its callId is longer). The video05 document is a different, shorter document at 89 characters — they are different documents, not a correction.</p>
+    <h3>What failed calls would cost at scale — illustrative only</h3>
+    <p>An agent making 1,000 paid calls a day with 1 in 10 failing pays for 100 failures a day — at an illustrative £0.01 per call that is <strong>£365 a year</strong> for work that never happened. <span class="small">Illustrative only — no real usage data.</span></p>
+    <p class="small">Try it: <label for="stakes-calls">Calls per day</label> <input type="text" id="stakes-calls" value="1000" inputmode="numeric"> <label for="stakes-rate">Fail rate (%)</label> <input type="text" id="stakes-rate" value="10" inputmode="decimal"> <label for="stakes-price">Price per call (£)</label> <input type="text" id="stakes-price" value="0.01" inputmode="decimal"></p>
+    <p id="stakes-result" aria-live="polite">Illustrative only — no real usage data.</p>
     <h3>See the 60-second proof — guided, no wallet needed</h3>
     <p>Four beats, one card at a time: a call that succeeds and deducts,
     a call that fails and is released, a second success that reaches the
@@ -94,7 +110,7 @@
     </div>
     <h3>Make a call (buyer script)</h3>
     <p>Calls are made by the buyer script, not this page:</p>
-    <p><code>node buyer/buyer.mjs --buyer &lt;buyer&gt;.testnet --mode demo --tag demo</code></p>
+    <p><code id="s2-demo-cmd">node buyer/buyer.mjs --buyer &lt;buyer&gt;.testnet --mode demo --tag demo</code> <button type="button" class="secondary" data-copy-from="s2-demo-cmd">Copy</button></p>
     <p class="small">Demonstrator mode: the seller <code>scenario</code>
     controls (success / fail / timeout) choose the demo outcome. A real
     seller ignores <code>scenario</code>.</p>
@@ -129,8 +145,11 @@
     <input type="text" id="seller-buyer" value="freeze1011-buyer.testnet" autocomplete="off" spellcheck="false">
     <p><button type="button" id="seller-load">Load seller call log</button></p>
     <p class="small">Defaults to the recorded demo buyer. Enter any buyer — e.g. your own replay buyer — to see their calls here.</p>
+    <p class="small">Demonstrator seller API: local only (<span class="mono">127.0.0.1:8787</span>) — not hosted; it ran for the recorded runs and is stopped now. Contract state below is live.</p>
+    <p><button type="button" id="seller-health-btn" class="secondary">Check seller on this machine</button></p>
     <div id="seller-health" aria-live="polite"></div>
     <div id="seller-result" aria-live="polite"></div>
+    <div id="seller-claims" aria-live="polite"></div>
   </section>
 
   <!-- S5 — Contract & replay -->
@@ -146,7 +165,7 @@
     for your own transactions, shown separately on the explorer.</p>
     <h3>Steps, in execution order — one command runs them all</h3>
     <ol class="steps">
-      <li><strong>Deposit.</strong> Run <code>node buyer/buyer.mjs --buyer &lt;buyer&gt;.testnet --mode demo --tag demo</code> once. This one command deposits 0.5 and sets cap 0.2 first, then runs the five calls in steps 2–6 below in order — do not run it again per step. (Or deposit and set the cap yourself with the commands in README §2.5, then run the same command with <code>--skip-setup</code>.) See: deposited 0.5, held 0, spent 0, available 0.5, cap 0.2. Proof: your deposit transaction on the explorer.</li>
+      <li><strong>Deposit.</strong> Run <code id="s5-demo-cmd">node buyer/buyer.mjs --buyer &lt;buyer&gt;.testnet --mode demo --tag demo</code> <button type="button" class="secondary" data-copy-from="s5-demo-cmd">Copy</button> once. This one command deposits 0.5 and sets cap 0.2 first, then runs the five calls in steps 2–6 below in order — do not run it again per step. (Or deposit and set the cap yourself with the commands in README §2.5, then run the same command with <code>--skip-setup</code>.) See: deposited 0.5, held 0, spent 0, available 0.5, cap 0.2. Proof: your deposit transaction on the explorer.</li>
       <li><strong>Success deducts.</strong> The script's first call: one success call. See: Succeeded — deducted 0.1 testnet NEAR; spent 0.1, available 0.4. Proof: deduction transaction, e.g. <a href="https://testnet.nearblocks.io/txns/BD3fkPVQNBBPjroxS85y3Bam2GK87TxDKSiFMVehC3Zd">BD3fkPVQ…</a> (canonical replay; your run has its own hash).</li>
       <li><strong>Fail releases.</strong> The script's second call: one fail call. See: Failed — held amount released, never deducted; spent still 0.1, available still 0.4. The buyer submits a failure claim; that claim releases the hold. Proof: release transaction, e.g. <a href="https://testnet.nearblocks.io/txns/3a6juX9uJHB5fr2C9emqfR82jJD8nijCnb4k1TPwQo9e">3a6juX9u…</a>.</li>
       <li><strong>Timeout releases.</strong> The script's third call: one timeout call; wait 30 s. See: Failed — no receipt received: held amount released, never deducted; balances unchanged. Proof: release transaction, e.g. <a href="https://testnet.nearblocks.io/txns/C2EXM52zH62Y4JZ6ZaqF6DCo2tXuhW369dYhTKnStycB">C2EXM52z…</a>.</li>
@@ -160,6 +179,20 @@
     or permission from the builder is needed; one judge's replay does not
     disturb another's (state is per buyer). Full setup commands are in
     README §2.3 and §2.5.</p>
+    <h3>Attack tests — backstop and tamper evidence (R-D1)</h3>
+    <p class="small">The 600 s backstop and the tamper path were proven on the frozen contract — here are the transactions, not just the claim. Every row links to the testnet explorer.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Test</th><th>What happened</th><th>Explorer</th></tr></thead>
+      <tbody>
+        <tr><td>Test 5 — backstop, after deadline</td><td>Third party (buyer B) <span class="mono">expire_call</span> → <span class="mono">timeout-refunded</span>; held 0.1 → 0, spent unchanged.</td><td><span class="mono">7C72vYNf…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/7C72vYNfthZJpCiQXN7dHwYDu1UriNWQJaikfHkXX5CE" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+        <tr><td>Test 5 — backstop, before deadline</td><td>Expire before the 600 s deadline → rejected <code>Call has not expired yet</code>; call stayed <span class="mono">paid</span>. No tx hash recorded in BUILD_NOTES.md — the rejection is recorded in prose only, not linked.</td><td>—</td></tr>
+        <tr><td>Tamper — <span class="mono">tamper-single-001</span></td><td>Bad seller response → buyer recomputed the hash, verified the seller signature locally, claimed <code>invalid_response</code> → hold released, spent 0.</td><td><span class="mono">8W7EQs94…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/8W7EQs94SoFk9JvvYaJ2nvewqRDq2NNYWbaSwNtu5DxS" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+        <tr><td>Tamper — <span class="mono">tamper05-single-2026-11-05T22-43-56-9jx7t9</span></td><td>Bad seller response → buyer claimed <code>invalid_response</code> → hold released, spent 0.</td><td><span class="mono">7rEaW3An…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/7rEaW3AntDRHynYDxi1JWiTDCtyzM4VYyMYC4d5PgGU7" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+        <tr><td>Tamper — <span class="mono">tamper-single-2026-11-05T22-23-52-6g85dd</span></td><td>Bad seller response → buyer claimed <code>invalid_response</code> → hold released, spent 0.</td><td><span class="mono">HU4Shwfi…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/HU4Shwfico9Uz3yiuZxR4qRnRnmjWR5Q3wAKEAckasSV" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+        <tr><td>Tamper — <span class="mono">uf5proof-single-2026-11-05T23-56-13-5hprtc</span></td><td>Bad seller response → buyer claimed <code>invalid_response</code> → hold released, spent 0.</td><td><span class="mono">2wQS4QAd…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/2wQS4QAdJR8zLa9HSqYTHzHyTH9GtbsBvz9WPtWEtVHX" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+        <tr><td>Dishonest-buyer demonstration — tx pending</td><td>Deliberate cheat run (genuine success served, buyer claims failure instead) — being run separately; the transaction will be added here when it exists. No tx invented.</td><td>—</td></tr>
+      </tbody>
+    </table></div>
     <h3>Dispute audit — seller attestation vs buyer claim vs outcome</h3>
     <p class="small"><strong>Detects, does not prevent.</strong> The contract
     stores the seller-attested response hash only for success claims;
@@ -187,13 +220,73 @@
     end-to-end 6 Nov 2026 — see <span class="mono">MULTI_SELLER_APPENDIX.md</span>
     in the repo. The frozen contract above remains the replay target.</p>
   </section>
+  <!-- S6 — Two sellers -->
+  <section class="view" id="view-s6" aria-label="Two sellers">
+    <h2>Two sellers — two instances, one seller each</h2>
+    <p><strong>Two instances, one seller each — NOT one contract with two sellers. No buyer deposit is shared across sellers (that needs a code change, Path B, not done). The seller APIs ran on localhost (127.0.0.1:8787 / :8788) for the proof runs and are stopped now, so no live call can be made from this page. The frozen contract apathetic-party.testnet remains the judge-replay target.</strong></p>
+    <p class="small">Both instances were deployed from the same wasm and proven end-to-end 6 Nov 2026 (Test 19 re-run per instance, fresh faucet buyer each). Machine-readable manifest: <span class="mono">dashboard/two-seller.json</span>. Full write-up: <span class="mono">MULTI_SELLER_APPENDIX.md</span> in the repo.</p>
+    <p class="small">Same wasm on all three contracts — SHA-256 <span class="mono">c54ae8e9d657338ccc695d32689fac322aaa1d77b90fd90e0ed63f86decbb3b0</span>, on-chain code hash <span class="mono">EH9ZtfU7FbRNSFTDUqTZoE9gQ7jRQ5Qb7cWDoMuBRRGB</span>.</p>
+    <!-- S6-LAYER1-START -->
+    <h3>Instance A — <span class="mono">mp-meteredpay-a.testnet</span></h3>
+    <p class="small">Seller <span class="mono">tedious-sea.testnet</span> · seller public key <span class="mono">ed25519:6zG7yLp2jqHxfkXfYgsL1ZXSf2NVQoRRaib6im72ubnm</span> · price 0.1 testnet NEAR per successful call · timeout 600 s · seller API (local, run 6 Nov) <span class="mono">127.0.0.1:8787</span> · buyer <span class="mono">mp-l1a-buyer.testnet</span>.</p>
+    <div class="table-wrap"><table>
+    <caption class="small">Test 19 re-run — 11 steps, 6 Nov 2026. Final on-chain state (deposit / held / spent / available / cap): <strong>0.5 / 0 / 0.2 / 0.3 / 0.2</strong>. Seller earned 0.2, withdrawn 0 testnet NEAR.</caption>
+    <thead><tr><th>Step</th><th>Transaction (explorer)</th></tr></thead><tbody>
+    <tr><td>Deposit 0.5</td><td><span class="mono">7fN9Huj8…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/7fN9Huj8TGNEPK89obUU5N5zSJu8QhW5FxFru66pVRN8" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Cap 0.2</td><td><span class="mono">DErRPhc5…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/DErRPhc5b3X3zb3bZSmvCB5oHyX5jPArmEFkQnDU43kH" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Success 1 — request</td><td><span class="mono">6Ddf7tHF…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/6Ddf7tHFoDx5kr2Hwj4FVr5Ko6jJaFeFrmfh6YB6N4Pd" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Success 1 — deducted 0.1</td><td><span class="mono">BaSPmTa7…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/BaSPmTa7PX4bvEaBVnWyJQf2x5zAzsKFFWLwxUXt2WtC" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Fail — request</td><td><span class="mono">8DkcC1a1…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/8DkcC1a1ZWpbsvKii79osFDwtuVNBGbSqHya7myXVF8s" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Fail — released, no deduction</td><td><span class="mono">4zbBApT7…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/4zbBApT79cUWx8R27CyjbwEL6DCrDLZy9bZvo2QepyY8" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Timeout — request</td><td><span class="mono">AjhBDLyj…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/AjhBDLyjdHfjTTc4XLAj3b1VyqK32jake6EdYEYN3KRT" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Timeout — released after 30 s wait</td><td><span class="mono">8u6Y1Zho…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/8u6Y1ZhoySjZJS1ZhLfLr6e5XJuBeCSqN7jTGQCwZG32" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Success 2 — request</td><td><span class="mono">398sR883…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/398sR883EGZnsXxErcdvw1mjU9vd1FyTyvmCdraEPPaK" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Success 2 — deducted 0.1</td><td><span class="mono">Fpv5L3Up…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/Fpv5L3UpMsFqx1282gqVYQenJHME6tHgAcCsGEVjGWfw" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Third success — refused, reason over_budget</td><td><span class="mono">6xYTiLSr…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/6xYTiLSrnVGXEcjj6cmXUaXTfnwVL2eaqaTCAZFni29V" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    </tbody></table></div>
+    <p class="small">Account creation: <span class="mono">6MyU7Dhf…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/6MyU7DhfVvBKENgLCovz6PrFNtNBGGVPaSKDChXQqFCU" target="_blank" rel="noopener">View on testnet explorer</a> · Deploy + init: <span class="mono">EXnxJ3Jn…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/EXnxJ3Jne2qZf7ZbAypmxi7LUTAgJ8AZJ5R8UDyd1D3V" target="_blank" rel="noopener">View on testnet explorer</a> · Buyer creation: <span class="mono">3dotiufc…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/3dotiufcBtriuxvvmCtJXLR9yf4JLdZE1W9soPFEuU9C" target="_blank" rel="noopener">View on testnet explorer</a></p>
+    <h3>Instance B — <span class="mono">mp-meteredpay-b.testnet</span></h3>
+    <p class="small">Seller <span class="mono">mp-seller2.testnet</span> · seller public key <span class="mono">ed25519:BoVrSvynnQ9Y1bKszwQaBhGA6DiKefwVtNy7KGfDSNze</span> · price 0.1 testnet NEAR per successful call · timeout 600 s · seller API (local, run 6 Nov) <span class="mono">127.0.0.1:8788</span> · buyer <span class="mono">mp-l1b-buyer.testnet</span>.</p>
+    <p class="small">First deduction ever paid to this seller — the seller was previously registered nowhere.</p>
+    <div class="table-wrap"><table>
+    <caption class="small">Test 19 re-run — 11 steps, 6 Nov 2026. Final on-chain state (deposit / held / spent / available / cap): <strong>0.5 / 0 / 0.2 / 0.3 / 0.2</strong>. Seller earned 0.2, withdrawn 0 testnet NEAR.</caption>
+    <thead><tr><th>Step</th><th>Transaction (explorer)</th></tr></thead><tbody>
+    <tr><td>Deposit 0.5</td><td><span class="mono">4LbEVG1X…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/4LbEVG1XvoeKUT77GtY7MqikCRZAV5pKtH3epzdYspeZ" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Cap 0.2</td><td><span class="mono">GeZT3VGa…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/GeZT3VGa4PQMgdA16RkkzAP8dUQp8U4NNEuHuD8FaCVh" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Success 1 — request</td><td><span class="mono">CpQizzAj…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/CpQizzAjfkovH4cbVeng4jCuubBp37Pux33T2Ug7BwMG" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Success 1 — deducted 0.1</td><td><span class="mono">CQqmYcwz…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/CQqmYcwziQYdAFxXbt8Z4bat7mTJWxLvJsfbyRC8BS67" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Fail — request</td><td><span class="mono">6VqUyveH…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/6VqUyveHfU9t914hLRQd8K8fVXShEmuo7dHY6C5fwF14" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Fail — released, no deduction</td><td><span class="mono">82j8wT9i…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/82j8wT9ihtH9SzAYKuUtBm7TcjAy3NWxnrPvxqFYrD8u" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Timeout — request</td><td><span class="mono">G4eZzreK…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/G4eZzreKPEGYrf8npfF6g86kqDdiJbYFQQLY3PUMNAc3" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Timeout — released after 30 s wait</td><td><span class="mono">8s86fcTH…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/8s86fcTHEiRFZfx7Tqdny62upSLoJwD6UUhHkqwSHqFc" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Success 2 — request</td><td><span class="mono">4vsfhuTf…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/4vsfhuTfj6ke48SW8d1P1tAS4Ry2LWYwzMNmpvVfYCaT" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Success 2 — deducted 0.1</td><td><span class="mono">CaCEnH75…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/CaCEnH75vdfJzBz7mwvMmEGMJ6GmeCyDjuL4Fi1wTDxP" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    <tr><td>Third success — refused, reason over_budget</td><td><span class="mono">FtDqQkkA…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/FtDqQkkAw8818QCjsJ7XXtkZ7JEU1kUnTf1S3hWP9Yhp" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
+    </tbody></table></div>
+    <p class="small">Account creation: <span class="mono">6mNPVGFD…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/6mNPVGFDkkaZLsQFTv5bmPw5P9bpgbHt9y9wzR2pBNx8" target="_blank" rel="noopener">View on testnet explorer</a> · Deploy + init: <span class="mono">8J3X5o4P…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/8J3X5o4PRgmW3ZnYW5ncF7HEKPPQ56mLAieCMRsWZsa2" target="_blank" rel="noopener">View on testnet explorer</a> · Buyer creation: <span class="mono">AuFcNTAy…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/AuFcNTAyi7ApyhE9AB1XzDUtPopReksJmn4vTFpdsLhz" target="_blank" rel="noopener">View on testnet explorer</a></p>
+    <h3>The two instances are really separate sellers — cross-seller negative check</h3>
+    <p class="small">Cross-check buyer <span class="mono">mp-l1x-buyer.testnet</span> (creation: <span class="mono">Gy3hwSN8…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/Gy3hwSN8mf9AnhCBanvFVQGPTk2vX1HH7ocZr3S1rdU1" target="_blank" rel="noopener">View on testnet explorer</a>). In each direction a success receipt signed by the OTHER seller's key was submitted to the contract, with a correctly signed buyer signature — so the seller signature is the only invalid part.</p>
+    <div class="table-wrap"><table>
+    <thead><tr><th>Direction</th><th>Setup txs (deposit / cap / request)</th><th>Rejected submit_success tx</th></tr></thead><tbody>
+    <tr><td>Seller 2&#x27;s receipt → instance A (xcheck-a-001)</td><td><span class="mono">Dh1oVsWe…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/Dh1oVsWeFU5TaD7Fw9kttJqZ2FSHmugDuzjAXL64qtmQ" target="_blank" rel="noopener">View on testnet explorer</a><br><span class="mono">FYcJVLVs…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/FYcJVLVs4YfHXSUEFLCGH6QKghFoGDQ1oRxAhfxqevLt" target="_blank" rel="noopener">View on testnet explorer</a><br><span class="mono">AqTKGpt1…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/AqTKGpt1ApSFobV8D7KPobqyKSj56AXY3DnhVLxHVbPt" target="_blank" rel="noopener">View on testnet explorer</a></td><td><span class="mono">6rwzrNiT…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/6rwzrNiTTQcpbvxyHKA6NUHr1GVX4n98ecEAXqdEoriv" target="_blank" rel="noopener">View on testnet explorer</a><br>Smart contract panicked: <code>Invalid seller signature</code></td></tr>
+    <tr><td>Seller 1&#x27;s receipt → instance B (xcheck-b-001)</td><td><span class="mono">5cFPjQpe…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/5cFPjQpemEf3iCNf5BzQPQ3BeeD4gNuqL4Q3CzpmLMaL" target="_blank" rel="noopener">View on testnet explorer</a><br><span class="mono">Du7f51Qz…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/Du7f51QzjRSJetZ5QFdaxeCi9Aw8HPXJqTEmPB3aMh9v" target="_blank" rel="noopener">View on testnet explorer</a><br><span class="mono">3baNTxyu…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/3baNTxyuhRgtFXseQvwTXk8QbXBHqNKn4dCqxUbfqZNa" target="_blank" rel="noopener">View on testnet explorer</a></td><td><span class="mono">GFE7wB5J…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/GFE7wB5JgukJ58Aho5RgmXBMi12uEL1pD1xCTnJfiNTB" target="_blank" rel="noopener">View on testnet explorer</a><br>Smart contract panicked: <code>Invalid seller signature</code></td></tr>
+    </tbody></table></div>
+    <p><strong>Both rejected on-chain with the contract panic &quot;Invalid seller signature&quot;; held 0.1 intact, spent 0 on both instances afterwards.</strong></p>
+    <!-- S6-LAYER1-END -->
+    <h3>Live now — per-instance contract reads</h3>
+    <p class="small">Each panel reads its own instance independently: one dead read never blanks the other. If a live read fails, the panel shows the recorded 6 Nov state and says so — a balance is never shown as 0 or “—” because a read failed.</p>
+    <div id="s6-live-a" aria-live="polite"></div>
+    <div id="s6-live-b" aria-live="polite"></div>
+    <div id="s6-claims" aria-live="polite"></div>
+    <p><button type="button" id="s6-retry" class="secondary">Retry live reads</button></p>
+  </section>
 </main>
 <footer>
   <p>MeteredPay — testnet only. Contract
   <span class="mono">apathetic-party.testnet</span>, seller
   <span class="mono">tedious-sea.testnet</span>, price 0.1 testnet NEAR per
   successful call. The demo seller is a demonstrator service; no
-  independent seller has run against the contract. Buyer dishonesty is
+  independent seller has run against this (frozen) contract. Buyer dishonesty is
   NOT solved. See <a href="./../GLOSSARY.md">GLOSSARY.md</a> and the
   <a href="./../README.md">README</a>.</p>
 </footer>

@@ -1,0 +1,35 @@
+# Render Blueprint — MeteredPay demonstrator seller (wave 5 experiment)
+#
+# STATUS (8 Nov 2026): EXPERIMENTAL — NOT DEPLOYED, NOT CLAIMED.
+# No Render service exists yet: deploying needs a Render account
+# (human-gated sign-up; this agent cannot create one) and the
+# SELLER_KEY_JSON env var set in the Render dashboard. Do NOT cite a
+# hosted seller URL anywhere (README, dashboard, submission) until
+# the 48 h warm-proof in seller-api/RENDER_PROOF_LOG.md passes.
+# See seller-api/RENDER_HOSTING.md for the full note.
+#
+# Deploy (once an account exists): connect this repo in the Render
+# dashboard, or `render blueprint launch` — this file is the whole
+# service definition. Free plan, $0, no card.
+services:
+  - type: web
+    name: meteredpay-seller
+    env: node
+    plan: free
+    rootDir: seller-api
+    buildCommand: "echo 'no build step — zero-dependency Node'"
+    startCommand: node server.mjs
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: NODE_VERSION
+        value: 24.22.1
+      - key: SELLER_ACCOUNT_ID
+        value: tedious-sea.testnet
+      - key: CONTRACT_ID
+        value: apathetic-party.testnet
+      # SELLER_KEY_JSON is intentionally NOT set here: it holds the
+      # testnet seller credential JSON and must be set as a secret env
+      # var in the Render dashboard (sync: false). NEVER commit it.
+      - key: SELLER_KEY_JSON
+        sync: false

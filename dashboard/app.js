@@ -156,6 +156,57 @@
     });
     return out;
   }
+  // D1 — per-buyer claim transparency (seller console v2). From the
+  // on-chain call list: successes, failure claims, timeout claims,
+  // and the failure-claim rate over settled claims (success +
+  // failure + timeout; refusals are not claims and are excluded).
+  // flag: 'all-failure' (rate 1), 'no-failure' (rate 0), 'mixed',
+  // or 'unknown' (no settled claims). The rendering must keep a
+  // 100% failure-claim buyer visibly distinct from a 0% one.
+  function claimStats(calls) {
+    var s = { calls: calls.length, successes: 0, failureClaims: 0, timeoutClaims: 0, refusals: 0, settled: 0, failureClaimRate: null, flag: 'unknown' };
+    calls.forEach(function (c) {
+      if (c.status === 'success-deducted') s.successes += 1;
+      else if (c.status === 'failed-refunded') s.failureClaims += 1;
+      else if (c.status === 'timeout-refunded') s.timeoutClaims += 1;
+      else if (c.status === 'refused') s.refusals += 1;
+    });
+    s.settled = s.successes + s.failureClaims + s.timeoutClaims;
+    if (s.settled > 0) {
+      s.failureClaimRate = s.failureClaims / s.settled;
+      s.flag = s.failureClaimRate === 1 ? 'all-failure' : (s.failureClaimRate === 0 ? 'no-failure' : 'mixed');
+    }
+    return s;
+  }
+  function claimBadgeHtml(s) {
+    if (s.flag === 'all-failure') return '<span class="badge amber">Every settled claim is a failure claim — 100% failure-claim rate</span>';
+    if (s.flag === 'no-failure') return '<span class="badge ok">No failure claims — 0% failure-claim rate</span>';
+    if (s.flag === 'mixed') return '<span class="badge neutral">Failure-claim rate ' + Math.round(s.failureClaimRate * 100) + '%</span>';
+    return '<span class="badge neutral">No settled claims yet</span>';
+  }
+  // Claim tx link for one call: the recorded run's settlement tx
+  // when known, else the block/explorer fallback (the contract stores
+  // no tx hash per call — see rowExplorerHtml). txForCall, when
+  // supplied, maps call_id -> { tx, label } and wins.
+  function claimTxHtml(c, buyerAcct, txForCall) {
+    var m = txForCall && txForCall[c.call_id];
+    if (m && m.tx) return '<span class="mono">' + shortHash(m.tx) + '</span> ' + txLink(m.tx);
+    var p = playbackById(c.call_id);
+    if (p && p.settleTx) return '<span class="mono">' + shortHash(p.settleTx) + '</span> ' + txLink(p.settleTx);
+    return rowExplorerHtml(c, buyerAcct);
+  }
+  function claimsTableHtml(buyerAcct, calls, txForCall) {
+    var s = claimStats(calls);
+    var rows = calls.filter(function (c) { return c.status === 'failed-refunded' || c.status === 'timeout-refunded'; }).map(function (c) {
+      var kind = c.status === 'failed-refunded' ? 'Failure claim (' + (c.failure_reason || '') + ')' : 'Timeout claim';
+      return '<tr><td><span class="mono">' + esc(c.call_id) + '</span></td><td>' + esc(kind) + '</td><td>' + claimTxHtml(c, buyerAcct, txForCall) + '</td></tr>';
+    }).join('') || '<tr><td colspan="3">No failure or timeout claims recorded for this buyer.</td></tr>';
+    return '<h3>Buyer claim transparency — <span class="mono">' + esc(buyerAcct) + '</span></h3>' +
+      '<p>Calls ' + s.calls + ' · successes ' + s.successes + ' · failure claims ' + s.failureClaims +
+      ' · timeout claims ' + s.timeoutClaims + ' · refusals ' + s.refusals + ' · ' + claimBadgeHtml(s) + '</p>' +
+      '<p class="small">Live from the contract (<span class="mono">list_calls</span>). A buyer who claims failure after a genuine success leaves a public pattern here — the contract cannot prevent the claim, but the pattern is visible. Failure-claim rate = failure claims ÷ settled claims (success + failure + timeout); refusals are not claims.</p>' +
+      '<div class="table-wrap"><table><thead><tr><th>Claim call</th><th>Claim</th><th>Claim transaction (explorer)</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
   function fmtYocto(y) { return (Number(BigInt(y)) / 1e24).toFixed(4).replace(/\.?0+$/, '') || '0'; }
   function fiveHtml(b) {
     return '<dl class="five" aria-label="Five-number balance, testnet NEAR">' +
@@ -184,11 +235,11 @@
   // Returns { ok, data, endpoint, error, at }.
   // ------------------------------------------------------------------
   var lastRpc = { ok: null, endpoint: null, at: null, error: null };
-  function rpcCall(method, args, endpoint) {
+  function rpcCall(method, args, endpoint, contractId) {
     var body = JSON.stringify({
       jsonrpc: '2.0', id: 'meteredpay-dash', method: 'query',
       params: {
-        request_type: 'call_function', account_id: C.CONTRACT_ID,
+        request_type: 'call_function', account_id: contractId || C.CONTRACT_ID,
         method_name: method, args_base64: btoa(unescape(encodeURIComponent(JSON.stringify(args)))),
         finality: 'final'
       }
@@ -201,12 +252,12 @@
       return JSON.parse(new TextDecoder().decode(new Uint8Array(j.result.result)));
     });
   }
-  function rpcView(method, args) {
+  function rpcViewFor(method, args, contractId) {
     var endpoints = C.RPC_URLS.slice();
     var chain = Promise.reject(new Error('no endpoint tried'));
     endpoints.forEach(function (ep) {
       for (var a = 0; a < 2; a++) {
-        chain = chain.catch(function () { return rpcCall(method, args, ep); });
+        chain = chain.catch(function () { return rpcCall(method, args, ep, contractId); });
       }
     });
     return chain.then(function (data) {
@@ -216,6 +267,9 @@
       lastRpc = { ok: false, endpoint: null, at: new Date(), error: String(e.message || e) };
       throw e;
     });
+  }
+  function rpcView(method, args) {
+    return rpcViewFor(method, args, C.CONTRACT_ID);
   }
   function rpcStatusHtml() {
     if (lastRpc.ok === null) return '<p class="small muted">Contract state not loaded yet in this session.</p>';
@@ -228,8 +282,9 @@
   // ------------------------------------------------------------------
   // Views
   // ------------------------------------------------------------------
-  var VIEWS = ['s1', 's2', 's3', 's4', 's5'];
+  var VIEWS = ['s1', 's2', 's3', 's4', 's5', 's6'];
   var currentCall = 'freeze1011-success-001';
+  var s2AutoLoaded = false;
   function show(view) {
     VIEWS.forEach(function (v) {
       var el = $('view-' + v);
@@ -239,6 +294,7 @@
     });
     if (view === 's4') loadSeller();
     if (view === 's5') loadReplay();
+    if (view === 's6') loadTwoSellers();
     announce('Showing view ' + view);
   }
   function route() {
@@ -272,7 +328,11 @@
       if (acctEl) acctEl.value = deepBuyer;
     }
     show(view);
+    // F4: S2 auto-loads the prefilled demo buyer on first entry (same
+    // pattern as S4/S5); the button stays as retry. A ?buyer= deep link
+    // loads that buyer instead.
     if (view === 's2' && deepBuyer) loadBuyer();
+    else if (view === 's2' && !s2AutoLoaded) { s2AutoLoaded = true; loadBuyer(); }
   }
 
   // S1 — Journey 0 playback (static data, zero network requests).
@@ -615,13 +675,21 @@
           '<div class="table-wrap"><table><thead><tr><th>Call</th><th>Result</th><th>Earned</th><th>Earned after</th><th>Explorer</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
           rpcStatusHtml();
         el.innerHTML = out;
+        // D1: per-buyer claim transparency, live from the same call list.
+        var claimsEl = $('seller-claims');
+        if (claimsEl) {
+          claimsEl.innerHTML = callsOk
+            ? claimsTableHtml(buyerAcct, calls, null)
+            : '<p>Buyer claim transparency could not be loaded — the call log could not be loaded.</p>';
+        }
         var retry = $('seller-retry');
         if (retry) retry.addEventListener('click', loadSeller);
         if (sOk && balOk) announce('Seller state loaded. Earned ' + fmtYocto(bal.earned) + ' testnet NEAR.');
         else announce('Some seller data could not be loaded.');
       })
       .catch(function () { el.innerHTML = rpcStatusHtml(); });
-    checkSellerHealth();
+    // F2: no auto-probe. The health check runs only when the judge
+    // presses "Check seller on this machine" (wired in init).
   }
   function checkSellerHealth() {
     var el = $('seller-health');
@@ -685,6 +753,120 @@
     });
   }
 
+  // S6 — Two sellers (live Layer 2). Recorded fallback state below
+  // must match dashboard/two-seller.json exactly (verify.mjs checks);
+  // it is shown ONLY when the live read fails, labelled as recorded.
+  var TWO_SELLER_RECORDED = [
+    { key: 'a', contract: 'mp-meteredpay-a.testnet', seller: 'tedious-sea.testnet', buyer: 'mp-l1a-buyer.testnet', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } },
+    { key: 'b', contract: 'mp-meteredpay-b.testnet', seller: 'mp-seller2.testnet', buyer: 'mp-l1b-buyer.testnet', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } }
+  ];
+  var twoSellerManifest = null;
+  function loadTwoSellerManifest() {
+    if (twoSellerManifest) return Promise.resolve(twoSellerManifest);
+    return fetch('./two-seller.json').then(function (r) { return r.json(); }).then(function (j) { twoSellerManifest = j; return j; }).catch(function () { return null; });
+  }
+  function twoSellerClaimTxMap(manifestInst) {
+    var m = {};
+    if (!manifestInst) return m;
+    manifestInst.steps.forEach(function (s) {
+      if (s.label.indexOf('Fail — released') === 0) m.fail = s.tx;
+      if (s.label.indexOf('Timeout — released') === 0) m.timeout = s.tx;
+    });
+    return m;
+  }
+  function s6PanelHtml(inst, res) {
+    var head = '<h3>Live now — instance ' + inst.key.toUpperCase() + ' (<span class="mono">' + esc(inst.contract) + '</span>)</h3>';
+    var ok = res.every(function (r) { return r.status === 'fulfilled'; });
+    if (!ok) {
+      var missing = ['seller registration', 'seller balance', 'buyer balance', 'call log'].filter(function (label, i) { return res[i].status !== 'fulfilled'; }).join(', ');
+      return head + '<div class="banner" role="alert"><strong>Live read failed (' + esc(missing) + ') — showing the recorded 6 Nov state below; retry.</strong> The recorded state is settled history, not a live read.</div>' +
+        '<p>Seller <span class="mono">' + esc(inst.seller) + '</span> · buyer <span class="mono">' + esc(inst.buyer) + '</span> (recorded 6 Nov 2026)</p>' +
+        fiveStaticHtml(inst.finalState) +
+        '<p>Earned (not yet withdrawn): <strong>' + esc(inst.earned) + ' testnet NEAR</strong> · Withdrawn: ' + esc(inst.withdrawn) + ' testnet NEAR (recorded 6 Nov state).</p>';
+    }
+    var s = res[0].value, bal = res[1].value, bb = res[2].value;
+    var matchSeller = s.seller_account_id === inst.seller;
+    var matchEarned = fmtYocto(bal.earned) === inst.earned;
+    var matchBal = fmtYocto(bb.deposit) === inst.finalState.deposit && fmtYocto(bb.held) === inst.finalState.held && fmtYocto(bb.spent) === inst.finalState.spent && fmtYocto(bb.available) === inst.finalState.available && fmtYocto(bb.budget_cap) === inst.finalState.cap;
+    var time = new Date().toLocaleTimeString();
+    var status = (matchSeller && matchEarned && matchBal)
+      ? '<p class="small">Live read ' + esc(time) + ' — matches the recorded final state.</p>'
+      : '<div class="banner" role="alert"><strong>Live read ' + esc(time) + ' — differs from the recorded 6 Nov state.</strong> Seller match: ' + (matchSeller ? 'yes' : 'NO') + '; earned match: ' + (matchEarned ? 'yes' : 'NO') + '; buyer balance match: ' + (matchBal ? 'yes' : 'NO') + '. The live values below are what the contract returns now.</div>';
+    return head + status +
+      '<p>Seller <span class="mono">' + esc(s.seller_account_id) + '</span> · price 0.1 testnet NEAR per successful call · backstop ' + esc(String(s.call_timeout_seconds)) + ' s</p>' +
+      '<p>Earned (not yet withdrawn): <strong>' + esc(fmtYocto(bal.earned)) + ' testnet NEAR</strong> · Withdrawn: ' + esc(fmtYocto(bal.withdrawn)) + ' testnet NEAR (live).</p>' +
+      '<h4>Buyer <span class="mono">' + esc(inst.buyer) + '</span> — live five-number balance</h4>' +
+      fiveHtml({ deposit: bb.deposit, held: bb.held, spent: bb.spent, available: bb.available, cap: bb.budget_cap });
+  }
+  function loadTwoSellers() {
+    var aEl = $('s6-live-a'), bEl = $('s6-live-b'), cEl = $('s6-claims');
+    if (aEl) aEl.innerHTML = '<p aria-live="polite">Loading live state for instance A…</p>';
+    if (bEl) bEl.innerHTML = '<p aria-live="polite">Loading live state for instance B…</p>';
+    loadTwoSellerManifest().then(function (man) {
+      var jobs = TWO_SELLER_RECORDED.map(function (inst) {
+        var min = man ? man.instances.filter(function (x) { return x.contract === inst.contract; })[0] : null;
+        // Per-instance allSettled: one dead read never blanks the other.
+        return Promise.allSettled([
+          rpcViewFor('get_seller', {}, inst.contract),
+          rpcViewFor('get_seller_balance', {}, inst.contract),
+          rpcViewFor('get_buyer_balance', { account_id: inst.buyer }, inst.contract),
+          rpcViewFor('list_calls', { buyer_account_id: inst.buyer, from_index: '0', limit: '50' }, inst.contract)
+        ]).then(function (res) { return { inst: inst, res: res, manifestInst: min }; });
+      });
+      return Promise.all(jobs);
+    }).then(function (done) {
+      done.forEach(function (d, i) {
+        var el = i === 0 ? aEl : bEl;
+        if (el) el.innerHTML = s6PanelHtml(d.inst, d.res);
+      });
+      if (cEl) {
+        cEl.innerHTML = done.map(function (d) {
+          if (d.res[3].status === 'fulfilled') {
+            var txMap = {};
+            if (d.manifestInst) {
+              var m = twoSellerClaimTxMap(d.manifestInst);
+              d.res[3].value.forEach(function (c) {
+                if (c.call_id.slice(-9) === '-fail-001' && m.fail) txMap[c.call_id] = { tx: m.fail };
+                if (c.call_id.slice(-12) === '-timeout-001' && m.timeout) txMap[c.call_id] = { tx: m.timeout };
+              });
+            }
+            return claimsTableHtml(d.inst.buyer, d.res[3].value, txMap);
+          }
+          var cs = d.inst.claimSummary;
+          return '<h3>Buyer claim transparency — <span class="mono">' + esc(d.inst.buyer) + '</span></h3>' +
+            '<p>Live call log could not be loaded — recorded 6 Nov state: calls ' + cs.calls + ' · successes ' + cs.successes + ' · failure claims ' + cs.failureClaims + ' · timeout claims ' + cs.timeoutClaims + ' · refusals ' + cs.refusals + '. Claim transactions are in the recorded tables above.</p>';
+        }).join('');
+      }
+      var okCount = done.filter(function (d) { return d.res.every(function (r) { return r.status === 'fulfilled'; }); }).length;
+      announce('Two-seller live reads finished: ' + okCount + ' of 2 instances live.');
+    }).catch(function () {
+      if (aEl) aEl.innerHTML = '<div class="banner" role="alert"><strong>Live read failed — showing the recorded 6 Nov state below; retry.</strong></div>';
+      if (bEl) bEl.innerHTML = '<div class="banner" role="alert"><strong>Live read failed — showing the recorded 6 Nov state below; retry.</strong></div>';
+    });
+  }
+
+  // Human-stakes calculator (S1). Every figure is illustrative only —
+  // no real usage data. Pure function + DOM wrapper.
+  function stakesYear(callsPerDay, failRatePct, pricePounds) {
+    return callsPerDay * (failRatePct / 100) * pricePounds * 365;
+  }
+  function stakesCalc() {
+    var el = $('stakes-result');
+    if (!el) return;
+    function num(id) {
+      var n = $(id);
+      return n ? parseFloat(String(n.value || '').replace(/,/g, '')) : NaN;
+    }
+    var c = num('stakes-calls'), r = num('stakes-rate'), p = num('stakes-price');
+    if (!isFinite(c) || !isFinite(r) || !isFinite(p) || c < 0 || r < 0 || r > 100 || p < 0) {
+      el.textContent = 'Enter numbers above — illustrative only, no real usage data.';
+      return;
+    }
+    var failedPerDay = c * (r / 100);
+    var perYear = stakesYear(c, r, p);
+    el.textContent = 'At ' + c.toLocaleString() + ' calls a day with ' + r + '% failing, you pay for ' + failedPerDay.toLocaleString() + ' failed calls a day — at £' + p + ' per call that is £' + perYear.toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' a year for work that never happened. Illustrative only — no real usage data.';
+  }
+
   // ------------------------------------------------------------------
   // Init
   // ------------------------------------------------------------------
@@ -707,6 +889,31 @@
     if (guidedBtn) guidedBtn.addEventListener('click', guidedStart);
     var sellerLoadBtn = $('seller-load');
     if (sellerLoadBtn) sellerLoadBtn.addEventListener('click', loadSeller);
+    // F2: health check behind an explicit button — never auto-probed.
+    var healthBtn = $('seller-health-btn');
+    if (healthBtn) healthBtn.addEventListener('click', checkSellerHealth);
+    var s6RetryBtn = $('s6-retry');
+    if (s6RetryBtn) s6RetryBtn.addEventListener('click', loadTwoSellers);
+    // F6: copy buttons on S2/S5 shell commands + the S1 response hash.
+    // data-copy carries the literal text; data-copy-from copies the
+    // text of a sibling <code> element (so the command appears once).
+    if (typeof document.querySelectorAll === 'function') {
+      document.querySelectorAll('button[data-copy]').forEach(function (b) {
+        b.addEventListener('click', function () { copyText(b.getAttribute('data-copy'), b); });
+      });
+      document.querySelectorAll('button[data-copy-from]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var src = document.getElementById(b.getAttribute('data-copy-from'));
+          if (src) copyText(src.textContent, b);
+        });
+      });
+    }
+    // Human-stakes calculator (S1).
+    ['stakes-calls', 'stakes-rate', 'stakes-price'].forEach(function (id) {
+      var n = $(id);
+      if (n) n.addEventListener('input', stakesCalc);
+    });
+    stakesCalc();
     var sellerAcct = $('seller-buyer');
     if (sellerAcct && !sellerAcct.value) sellerAcct.value = C.DEMO_BUYER;
     window.addEventListener('hashchange', route);
@@ -724,5 +931,5 @@
 
   // ------------------------------------------------------------------
   // Exposed for the headless verification harness (not part of the UI).
-  window.__meteredpay = { PLAYBACK: PLAYBACK, renderPlayback: renderPlayback, renderS3: renderS3, route: route, loadBuyer: loadBuyer, loadReplay: loadReplay, loadSeller: loadSeller, fmtYocto: fmtYocto, fiveHtml: fiveHtml, fiveStaticHtml: fiveStaticHtml, guidedStart: guidedStart, guidedNext: guidedNext, guidedBack: guidedBack, guidedShowTimeout: guidedShowTimeout, guidedState: guidedState, renderGuided: renderGuided, runWaitDemo: runWaitDemo, skipWaitDemo: skipWaitDemo, rowExplorerHtml: rowExplorerHtml, liveBalanceAfter: liveBalanceAfter, liveBalanceBefore: liveBalanceBefore };
+  window.__meteredpay = { PLAYBACK: PLAYBACK, renderPlayback: renderPlayback, renderS3: renderS3, route: route, loadBuyer: loadBuyer, loadReplay: loadReplay, loadSeller: loadSeller, loadTwoSellers: loadTwoSellers, claimStats: claimStats, stakesYear: stakesYear, stakesCalc: stakesCalc, fmtYocto: fmtYocto, fiveHtml: fiveHtml, fiveStaticHtml: fiveStaticHtml, guidedStart: guidedStart, guidedNext: guidedNext, guidedBack: guidedBack, guidedShowTimeout: guidedShowTimeout, guidedState: guidedState, renderGuided: renderGuided, runWaitDemo: runWaitDemo, skipWaitDemo: skipWaitDemo, rowExplorerHtml: rowExplorerHtml, liveBalanceAfter: liveBalanceAfter, liveBalanceBefore: liveBalanceBefore };
 })();

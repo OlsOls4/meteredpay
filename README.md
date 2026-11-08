@@ -29,10 +29,20 @@ happens only on a buyer-verified success receipt, the budget is a
 contract cap, and a failed call is released — held amount released,
 never deducted.
 
+Why it matters in human terms: an agent making 1,000 paid calls a
+day with 1 in 10 failing pays for 100 failures a day — at an
+illustrative £0.01 per call that is £365 a year for work that never
+happened (illustrative only — no real usage data; the demo price is
+0.1 testnet NEAR per call and testnet NEAR has no monetary value).
+
 The x402 distinction (corrected — see Council wave 3, R1, and final
 council, researchers F-R1b): x402 lets agents pay for APIs, and its
-newer `auth-capture` scheme can hold funds in escrow — but the
-guarantee lives outside any contract the payer can verify and replay.
+newer `auth-capture` scheme can hold funds in escrow — the escrow
+contract holds the funds, but the *success condition* lives with the
+captureAuthorizer (facilitator or its contract) — no x402 scheme lets
+the payer's verified success receipt gate capture, and the client's
+reclaim exists only after the capture deadline (x402-foundation
+`auth-capture` spec, `scheme_auth_capture.md`).
 x402's `authorization` flow (the default, preferred) settles only
 after the resource handler succeeds, and `auth-capture` holds funds
 in escrow with capture, void, or refund needing the seller's consent,
@@ -70,6 +80,15 @@ alone.
   an error list + the SHA-256 of the canonical input), with success
   and fail modes, one fixed price per call (0.1 testnet NEAR). A
   document that fails validation is a failure, never a paid success.
+  The `invoice` and `payment-instruction` schemas are now also proven
+  end-to-end through the same primitive, same seller, same service —
+  second/third job *types*, not a second service — see
+  `SECOND_JOB_TYPES_APPENDIX.md`. A second service of a different
+  kind is also proven: a deterministic extractive summariser
+  (`meteredpay-summarise` — produce, not check), run by
+  `mp-seller2.testnet` on a third instance
+  (`mp-meteredpay-c.testnet`) at 0.05 testnet NEAR/call — see
+  `SECOND_SERVICE_APPENDIX.md`.
   (Days 8–9 upgrade. The canonical recorded run in §2.5 is the
   freeze1011 run of 5 Nov 21:06 UTC on this schema-validation service
   with the failure-claiming buyer — same frozen contract, same final
@@ -127,7 +146,20 @@ buyer → seller API → success receipt (buyer-verified, payer-signed)
 
 ### Commands
 
+**One-command replay (fastest path — start here):**
+
 ```bash
+./replay.sh
+# Checks Node 24 + near-cli, creates a fresh faucet-funded testnet
+# buyer, starts the demonstrator seller if needed, runs the full
+# demo (Steps 1–6) and asserts the frozen final state 0.5 / 0 / 0.2
+# / 0.3 / 0.2. Measured 240 s once the toolchain is installed
+# (15–45 min all-in on a clean machine, including toolchain install).
+# Verify-only (no new account, no seller, curl + python3 only):
+./replay.sh verify-only --log buyer/runs/<run>.jsonl
+```
+
+Manual run (same steps, step by step):
 git clone https://github.com/OlsOls4/meteredpay && cd meteredpay
 cd seller-api && node server.mjs              # demonstrator seller on http://127.0.0.1:8787
 # Expected first output: "[seller] contract apathetic-party.testnet confirmed: seller=tedious-sea.testnet price=100000000000000000000000 yoctoNEAR timeout=600s"
@@ -209,6 +241,13 @@ buyer script with a fresh testnet account. One command runs Steps
 
 Toolchain for every step below: Node 24 (see §2.3 Prerequisites) —
 the same Node 24 the buyer script and seller API are built with.
+
+Single calls: `node buyer/buyer.mjs --buyer <buyer>.testnet --mode
+single` runs ONE call and prints machine-readable JSON on stdout
+(see `buyer/README.md` for the JSON shape and exit codes). Single
+mode is top-up-aware: it reuses an existing deposit, deposits only
+the shortfall to `--deposit`, and sets the cap only if it differs —
+repeat calls need no manual flags.
 
 **Canonical replay.** The steps below, the dashboard (S1 playback and
 S5 steps), and `dashboard/frozen-run.json` all describe ONE run: the
@@ -314,6 +353,58 @@ contradiction.
   rejected the same way ("Call is not in paid state"); its rejection
   tx hash was not captured at the time, so the days 8–9 capture above
   is the linked proof.
+
+**Step 8 (appendix) — Test 5 backstop: third-party expiry.**
+- Do: request a call, then let it sit past the 600 s deadline with
+  no buyer claim (see `BUILD_NOTES.md`, Test 5, and
+  `test-tools/results.jsonl`, steps
+  `phase0-expire-before-deadline-expect-fail` and
+  `test5-backstop-expire-by-third-party`).
+- See: an `expire_call` before the deadline is rejected ("Call has
+  not expired yet", call stays `paid` — no tx hash was captured for
+  that rejection at the time); after the deadline, a third party
+  (buyer B, `unhealthy-shoes.testnet`) calls `expire_call` for buyer
+  A's call `t5-backstop` and the hold is released, spent unchanged.
+- Proof: third-party expiry transaction
+  https://testnet.nearblocks.io/txns/7C72vYNfthZJpCiQXN7dHwYDu1UriNWQJaikfHkXX5CE
+  (RPC `tx` query, signer `unhealthy-shoes.testnet`: `SuccessValue`,
+  method `expire_call`, receiver `apathetic-party.testnet`) — held
+  0.1 → 0, spent unchanged. A call can never be held forever.
+
+### 2.5b Attack tests — tampered responses rejected, dishonest buyer detected
+
+**Tampered responses (`invalid_response`).** Four runs in which the
+buyer received a bad seller response, recomputed the hash / verified
+the seller signature locally, and claimed `invalid_response` instead
+of paying — hold released, spent 0 in each case (run logs in
+`buyer/runs/`):
+
+| Run | Failure-claim tx |
+|---|---|
+| `tamper-single-001`, 5 Nov 20:15 UTC | https://testnet.nearblocks.io/txns/8W7EQs94SoFk9JvvYaJ2nvewqRDq2NNYWbaSwNtu5DxS |
+| `tamper05-single-…`, 5 Nov 22:45 UTC | https://testnet.nearblocks.io/txns/7rEaW3AntDRHynYDxi1JWiTDCtyzM4VYyMYC4d5PgGU7 |
+| `tamper-single-…`, 5 Nov 22:25 UTC | https://testnet.nearblocks.io/txns/HU4Shwfico9Uz3yiuZxR4qRnRnmjWR5Q3wAKEAckasSV |
+| `uf5proof-single-…`, 5 Nov 23:56 UTC | https://testnet.nearblocks.io/txns/2wQS4QAdJR8zLa9HSqYTHzHyTH9GtbsBvz9WPtWEtVHX |
+
+Each tx was re-checked with an RPC `tx` query (signers
+`tamper89-buyer.testnet`, `mp-tamper05.testnet`,
+`heavenly-hook.testnet`, `heavenly-hook.testnet`): all
+`SuccessValue`, method `submit_failure`, receiver
+`apathetic-party.testnet`. (Older txs are served by the archival
+RPC, `https://archival-rpc.testnet.near.org` — the public RPC
+returns `NOT_OBSERVED` for them.)
+
+**Dishonest buyer (deliberate cheat, 8 Nov 2026).** The seller
+served a genuine signed success for call `dishonest-001`; the buyer
+instead submitted `submit_failure` with no evidence. The seller's
+retained attestation verifies locally against the registered seller
+key, while the on-chain record for the same call is
+`failed-refunded` — the mismatch is the detection. Full side-by-side
+write-up: `DISHONEST_BUYER_DEMO.md`. Failure-claim tx:
+https://testnet.nearblocks.io/txns/6VDzYRot7ZnhKcaR6EZGi3M4f5dPtBy7X6eZNYXfd8wB
+(RPC `tx` query, signer `mp-dishonest-wdvw4o.testnet`:
+`SuccessValue`, method `submit_failure`). This **detects, does not
+prevent** buyer dishonesty — see §2.7.
 
 Final state after the demo run: deposit 0.5 / held 0 / spent 0.2 /
 available 0.3 / cap 0.2.
@@ -438,6 +529,10 @@ steps, same final state, a fresh buyer.
   failure; it does not protect the seller from a dishonest buyer. The
   dashboard S5 dispute-audit view detects disagreement between the
   seller attestation and the buyer claim; it does not prevent it.
+  Demonstrated deliberately on 8 Nov 2026 — see
+  `DISHONEST_BUYER_DEMO.md` and §2.5b.
+- The budget cap is enforced at request_call only; submit_success does not re-check it, and the buyer key-holder can raise the cap up to the deposit, so the cap bounds a looping or buggy buyer agent, not a compromised buyer key.
+- Unspent deposit: no buyer withdraw exists in v1 — unspent funds remain locked to the buyer account; withdraw is seller-only.
 - The prize payout address on the submission form is a
   production-network NEAR account supplied by the human team lead.
   It is not used by the demo.
@@ -562,7 +657,12 @@ pass, and no URL is invented.
 The x402 distinction: x402's `authorization` flow settles only after
 success and `auth-capture` holds funds in escrow with capture, void,
 or refund needing the seller's consent, relayed by a facilitator —
-the party being paid decides whether it gets paid. MeteredPay inverts
+the party being paid decides whether it gets paid. The escrow
+contract holds the funds, but the *success condition* lives with the
+captureAuthorizer (facilitator or its contract) — no x402 scheme lets
+the payer's verified success receipt gate capture, and the client's
+reclaim exists only after the capture deadline (x402-foundation
+`auth-capture` spec, `scheme_auth_capture.md`). MeteredPay inverts
 that: the seller cannot mark its own calls successful; only the
 buyer's verified, signed success receipt triggers a deduction.
 Neither x402 scheme puts the success condition in a contract the
