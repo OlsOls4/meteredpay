@@ -62,6 +62,11 @@ function cannedFetch(url, opts) {
     const man = readFileSync(join(HERE, 'two-seller.json'), 'utf8');
     return Promise.resolve({ json: () => Promise.resolve(JSON.parse(man)) });
   }
+  // S7 manifest: same pattern, separate file (see dashboard/index.html S7).
+  if (typeof url === 'string' && url.endsWith('instance-c.json')) {
+    const man = readFileSync(join(HERE, 'instance-c.json'), 'utf8');
+    return Promise.resolve({ json: () => Promise.resolve(JSON.parse(man)) });
+  }
   // Seller /health check carries no RPC body.
   if (!opts || !opts.body) {
     return Promise.resolve({ json: () => Promise.resolve({ status: 'ok', seller_account_id: 'tedious-sea.testnet', price_per_call_yocto: '100000000000000000000000', mode: 'demo' }) });
@@ -69,6 +74,25 @@ function cannedFetch(url, opts) {
   const body = JSON.parse(opts.body);
   // S6 per-instance canned views (live 8 Nov 2026 RPC values).
   const acct = body.params.account_id;
+  // S7 per-instance canned views (live 8 Nov 2026 RPC values, re-checked
+  // live 13 Nov 2026: earned 0.1, withdrawn 0; buyer 0.5/0/0.1/0.4/0.1).
+  if (acct === 'mp-meteredpay-c.testnet') {
+    const m = body.params.method_name;
+    let data = {};
+    if (m === 'get_seller') data = { seller_account_id: 'mp-seller2.testnet', seller_public_key: 'ed25519:BoVrSvynnQ9Y1bKszwQaBhGA6DiKefwVtNy7KGfDSNze', price_per_call: '50000000000000000000000', call_timeout_seconds: 600 };
+    else if (m === 'get_seller_balance') data = { seller_account_id: 'mp-seller2.testnet', earned: '100000000000000000000000', withdrawn: '0' };
+    else if (m === 'get_buyer_balance') data = { account_id: 'mp-rf2-buyer.testnet', deposit: '500000000000000000000000', held: '0', spent: '100000000000000000000000', available: '400000000000000000000000', budget_cap: '100000000000000000000000' };
+    else if (m === 'list_calls') data = [
+      { call_id: 'rf2-c-overbudget-001', status: 'refused', price: '50000000000000000000000', response_hash: null, failure_reason: null, proposed_height: 300005, resolved_height: 300006 },
+      { call_id: 'rf2-c-success-002', status: 'success-deducted', price: '50000000000000000000000', response_hash: '4856bdb6f05bfb065b76601d290be93f186307ed82981a5dd803e1b91d59142d', failure_reason: null, proposed_height: 300003, resolved_height: 300004 },
+      { call_id: 'rf2-c-timeout-001', status: 'timeout-refunded', price: '50000000000000000000000', response_hash: null, failure_reason: 'timeout', proposed_height: 300002, resolved_height: 300003 },
+      { call_id: 'rf2-c-fail-001', status: 'failed-refunded', price: '50000000000000000000000', response_hash: null, failure_reason: 'seller_error', proposed_height: 300001, resolved_height: 300002 },
+      { call_id: 'rf2-c-success-001', status: 'success-deducted', price: '50000000000000000000000', response_hash: 'bac8e9303f7eb5de0abb66454f885d7ac24e1aa7cb79a57d7e56d94fd274fdcd', failure_reason: null, proposed_height: 300000, resolved_height: 300001 },
+    ];
+    else if (m === 'list_refusals') data = [{ call_id: 'rf2-c-overbudget-001', reason: 'over_budget', price: '50000000000000000000000', deposit: '500000000000000000000000', spent: '100000000000000000000000', held: '0', budget_cap: '100000000000000000000000' }];
+    const payload = Buffer.from(JSON.stringify(data), 'utf8');
+    return Promise.resolve({ json: () => Promise.resolve({ result: { result: Array.from(payload) } }) });
+  }
   if (acct === 'mp-meteredpay-a.testnet' || acct === 'mp-meteredpay-b.testnet') {
     const isA = acct.endsWith('-a.testnet');
     const seller = isA ? 'tedious-sea.testnet' : 'mp-seller2.testnet';
@@ -182,7 +206,7 @@ check('guided progressbar carries aria-valuenow', g.includes('role="progressbar"
 check('guided start makes zero fetch calls', fetchCalls.length === 0);
 mp.guidedNext();
 g = els['guided'].innerHTML;
-check('guided step 2 is the failed call', g.includes('freeze1011-fail-001') && g.includes('2 of 4') && g.includes('Refunded'));
+check('guided step 2 is the failed call', g.includes('freeze1011-fail-001') && g.includes('2 of 4') && g.includes('Hold released'));
 mp.guidedNext();
 g = els['guided'].innerHTML;
 check('guided step 3 is the second success (cap reached)', g.includes('freeze1011-success-002') && g.includes('3 of 4') && g.includes('Deducted 0.1'));
@@ -547,9 +571,10 @@ check('U-F8 S3 has a Make another call link to S2',
   }
   check('S6 honesty header is verbatim in index.html',
     indexHtml.includes('Two instances, one seller each — NOT one contract with two sellers. No buyer deposit is shared across sellers (that needs a code change, Path B, not done). The seller APIs ran on localhost (127.0.0.1:8787 / :8788) for the proof runs and are stopped now, so no live call can be made from this page. The frozen contract apathetic-party.testnet remains the judge-replay target.'));
-  check('S1 strip names both sellers paid with earned 0.2',
-    indexHtml.includes('Two sellers have now been paid') && indexHtml.includes('mp-meteredpay-a.testnet') &&
-    indexHtml.includes('mp-meteredpay-b.testnet') && indexHtml.includes('first deduction ever paid to this seller'));
+  check('S1 strip names two sellers earned — A/B 0.2 each on-chain, C 0.1',
+    indexHtml.includes('Two sellers have now earned') && indexHtml.includes('mp-meteredpay-a.testnet') &&
+    indexHtml.includes('mp-meteredpay-b.testnet') && indexHtml.includes('mp-meteredpay-c.testnet') &&
+    indexHtml.includes('earned 0.2 each on-chain') && indexHtml.includes('the 0.2 this seller first earned in this 6 Nov run'));
   check('S6 Layer 1 states held 0.1 intact, spent 0 after the rejections',
     indexHtml.includes('held 0.1 intact, spent 0 on both instances afterwards'));
   check('Nav uses plain labels incl. Two sellers',
@@ -661,8 +686,10 @@ check('U-F8 S3 has a Make another call link to S2',
   check('F3 S1 concrete-call block shows the real input/output + hash',
     indexHtml.includes('MeteredPay demo call freeze1011-success-001: pay per successful call, nothing for a failure.') &&
     indexHtml.includes('word_count:12, char_count:92') && indexHtml.includes('58aa417c'));
-  check('F3 S1 states 92 is correct and 89 is a different document',
-    indexHtml.includes('char_count 92 is correct') && indexHtml.includes('89 characters'));
+  check('F3 S1 errata paragraph is gone (no defensive 92/89-char note)',
+    !indexHtml.includes('char_count 92 is correct') && !indexHtml.includes('they are different documents, not a correction'));
+  check('F3 S1 concrete-call block still shows the real output (word_count 12, char_count 92)',
+    indexHtml.includes('word_count:12, char_count:92'));
   check('F6 copy buttons on the S2 + S5 demo commands (copy the command text)',
     indexHtml.includes('data-copy-from="s2-demo-cmd"') && indexHtml.includes('data-copy-from="s5-demo-cmd"') &&
     appJs.includes("data-copy-from") && appJs.includes('copyText(src.textContent, b)'));
@@ -672,8 +699,10 @@ check('U-F8 S3 has a Make another call link to S2',
   for (const h of ['8W7EQs94SoFk9JvvYaJ2nvewqRDq2NNYWbaSwNtu5DxS', '7rEaW3AntDRHynYDxi1JWiTDCtyzM4VYyMYC4d5PgGU7', 'HU4Shwfico9Uz3yiuZxR4qRnRnmjWR5Q3wAKEAckasSV', '2wQS4QAdJR8zLa9HSqYTHzHyTH9GtbsBvz9WPtWEtVHX']) {
     check('R-D1 S5 block links tamper tx ' + h.slice(0, 8), indexHtml.includes(h));
   }
-  check('R-D1 dishonest-buyer row is a clearly-marked placeholder, no invented tx',
-    indexHtml.includes('Dishonest-buyer demonstration — tx pending') && indexHtml.includes('No tx invented'));
+  check('R-D1 dishonest-buyer row links the real cheat tx (8 Nov run, verified via NearBlocks v3)',
+    indexHtml.includes('Dishonest-buyer demonstration') && indexHtml.includes('dishonest-001') &&
+    indexHtml.includes('6VDzYRot7ZnhKcaR6EZGi3M4f5dPtBy7X6eZNYXfd8wB') && indexHtml.includes('Buyer dishonesty is NOT solved') &&
+    !indexHtml.includes('tx pending'));
   check('Human-stakes strip is labelled illustrative only',
     indexHtml.includes('pays for 100 failures a day') && indexHtml.includes('Illustrative only — no real usage data'));
   check('stakesYear(1000, 10, 0.01) is 365', mp.stakesYear(1000, 10, 0.01) === 365);
@@ -691,6 +720,129 @@ check('U-F8 S3 has a Make another call link to S2',
     els['buyer-result'].innerHTML.includes('<dt>Deposited</dt>') && els['buyer-result'].innerHTML.includes('<dt>Spent</dt><dd>0.2</dd>'));
   ctx.location.hash = '#/s1';
   mp.route();
+}
+
+
+// --- Test 27: Wave 6 — S7 instance C, pre-rendered S1 rows, money +
+// differentiation strips, headline + limit line, S4 live withdrawn ---
+{
+  const indexHtml = readFileSync(join(HERE, 'index.html'), 'utf8');
+  const appJs = readFileSync(join(HERE, 'app.js'), 'utf8');
+  // S7 manifest vs appendix vs static Layer 1.
+  const manC = JSON.parse(readFileSync(join(HERE, 'instance-c.json'), 'utf8'));
+  const appendixC = readFileSync(join(HERE, '..', 'SECOND_SERVICE_APPENDIX.md'), 'utf8');
+  check('S7 manifest has one instance C at 0.05 NEAR', manC.instances.length === 1 &&
+    manC.instances[0].contract === 'mp-meteredpay-c.testnet' && manC.instances[0].price_near === '0.05');
+  check('S7 manifest seller/buyer/service', manC.instances[0].seller === 'mp-seller2.testnet' &&
+    manC.instances[0].buyer === 'mp-rf2-buyer.testnet' && manC.instances[0].service === 'meteredpay-summarise');
+  {
+    const inst = manC.instances[0], f = inst.final_state;
+    check('S7 manifest instance C final state is 0.5/0/0.1/0.4/0.1',
+      f.deposit === '0.5' && f.held === '0' && f.spent === '0.1' && f.available === '0.4' && f.cap === '0.1');
+    check('S7 manifest instance C earned 0.1, withdrawn 0', inst.seller_balance.earned === '0.1' && inst.seller_balance.withdrawn === '0');
+    check('S7 manifest instance C has 11 steps', inst.steps.length === 11);
+  }
+  check('S7 manifest wasm SHA-256 + code hash match the appendix',
+    appendixC.includes(manC.wasm_sha256) && appendixC.includes(manC.code_hash));
+  const txsC = [];
+  {
+    const inst = manC.instances[0];
+    txsC.push(inst.account_creation_tx, inst.deploy_init_tx, inst.buyer_creation_tx);
+    inst.steps.forEach((s) => txsC.push(s.tx));
+  }
+  for (const h of txsC) {
+    check('S7 manifest tx ' + h.slice(0, 8) + ' appears in the appendix', appendixC.includes(h));
+    check('S7 manifest tx ' + h.slice(0, 8) + ' appears in static Layer 1 HTML', indexHtml.includes(h));
+  }
+  check('S7 worked example hashes match the appendix',
+    appendixC.includes(manC.instances[0].worked_example.success.response_hash) &&
+    appendixC.includes(manC.instances[0].worked_example.success.input_sha256));
+  check('S7 honesty header is verbatim in index.html',
+    indexHtml.includes('A different seller API on a third instance — NOT a contract change.') &&
+    indexHtml.includes('127.0.0.1:8789') && indexHtml.includes('no shared deposit'));
+  check('S7 non-claims are stated (localhost, deterministic toy, no external cost)',
+    indexHtml.includes('Local demonstrator only') && indexHtml.includes('Deterministic toy') &&
+    indexHtml.includes('No external cost'));
+  check('Nav includes Summariser (S7)', indexHtml.includes('href="#/s7">Summariser</a>'));
+  check('S1 says all four contracts, not three',
+    indexHtml.includes('all four contracts') && !indexHtml.includes('all three contracts'));
+  // Pre-rendered S1 proof rows: present in the raw file, no JS needed.
+  {
+    const tbody = indexHtml.slice(indexHtml.indexOf('<tbody id="playback-rows">'), indexHtml.indexOf('</tbody>', indexHtml.indexOf('<tbody id="playback-rows">')));
+    for (const id of ['freeze1011-success-001', 'freeze1011-fail-001', 'freeze1011-timeout-001', 'freeze1011-success-002', 'freeze1011-overbudget-001']) {
+      check('S1 static tbody contains ' + id, tbody.includes(id));
+    }
+    check('S1 static tbody contains the deduction + release txs',
+      tbody.includes('BD3fkPVQNBBPjroxS85y3Bam2GK87TxDKSiFMVehC3Zd') && tbody.includes('3a6juX9uJHB5fr2C9emqfR82jJD8nijCnb4k1TPwQo9e'));
+    check('S1 static tbody uses the hold-released wording, not Refunded',
+      tbody.includes('Hold released') && !tbody.includes('Refunded'));
+  }
+  // Money strip + differentiation strip + headline + limit line + guided move.
+  check('S1 money strip shows the 0.5 → 0.1 → 0 → cap → refused flow + final state',
+    indexHtml.includes('Money at a glance') && indexHtml.includes('deposit <strong>0.5</strong>') &&
+    indexHtml.includes('Final: deposit <strong>0.5</strong> / held <strong>0</strong> / spent <strong>0.2</strong> / available <strong>0.3</strong> / cap <strong>0.2</strong>'));
+  check('S1 money strip cites the live 13 Nov re-read (seller earned 4.6 cumulative)',
+    indexHtml.includes('Re-read live 13 Nov 2026') && indexHtml.includes('earned 4.6 testnet NEAR in total'));
+  check('S1 differentiation strip names all three, each linked',
+    indexHtml.includes('Spend Guard pays on attempt') && indexHtml.includes('x402 settles on the seller') &&
+    indexHtml.includes('MeteredPay deducts only on a buyer-verified receipt') &&
+    indexHtml.includes('github.com/mubudot/near-agent-spend-guard') &&
+    indexHtml.includes('developers.circle.com/x402-facilitators/x402') &&
+    indexHtml.includes('testnet.nearblocks.io/txns/BD3fkPVQNBBPjroxS85y3Bam2GK87TxDKSiFMVehC3Zd'));
+  check('S1 headline is the deducted-zero wording',
+    indexHtml.includes('deducted: zero on a failed call') && !indexHtml.includes('nothing for a failed call'));
+  check('S1 states the dishonest-buyer limit up front',
+    indexHtml.includes('Limit, stated up front:') && indexHtml.includes('buyer dishonesty is NOT solved'));
+  check('S1 guided proof sits before "What is sold" (judge finds it first)',
+    indexHtml.indexOf('id="guided-start"') < indexHtml.indexOf('What is sold:'));
+  check('No "Refunded" label wording remains in the dashboard copy',
+    !indexHtml.includes('Refunded') && !appJs.includes("amount: 'Refunded") && !appJs.includes('Released (refunded)'));
+  check('No seller-earnings "paid" remains (earned wording)',
+    !indexHtml.includes('have now been paid') && !indexHtml.includes('ever paid to this seller') &&
+    !indexHtml.includes('a seller is paid 0.1'));
+  // S7 live panel via canned RPC.
+  ctx.location.hash = '#/s7';
+  mp.route();
+  await new Promise((r) => setTimeout(r, 500));
+  const c = els['s7-live-c'].innerHTML;
+  check('S7 panel C shows live seller + earned 0.1 + recorded match',
+    c.includes('mp-seller2.testnet') && c.includes('matches the recorded final state') &&
+    c.includes('<dt>Spent</dt><dd>0.1</dd>') && c.includes('<dt>Available</dt><dd>0.4</dd>'));
+  check('S7 panel C shows the 0.05 price', c.includes('price 0.05 testnet NEAR per successful call'));
+  const claimsC = els['s7-claims'].innerHTML;
+  check('S7 claims show per-buyer failure-claim rate 25% (1 of 4 settled)',
+    claimsC.includes('mp-rf2-buyer.testnet') && claimsC.includes('Failure-claim rate 25%'));
+  check('S7 claims link the recorded claim txs',
+    claimsC.includes('DsuUaPJwdmYtZYsmMtDAjAGyGMe1qfQvLUgyxmQF8kte') && claimsC.includes('gcdusHSNLBGGAdu6UPtQ3Xkxp1vKJEza7YNxD1LBsLy'));
+  ctx.location.hash = '#/s1';
+  mp.route();
+  // S7 RPC failure: recorded 8 Nov fallback, never a blank/zero balance.
+  {
+    const realFetch = ctx.fetch;
+    ctx.fetch = (url, opts) => {
+      if (opts && opts.body) {
+        const p = JSON.parse(opts.body).params;
+        if (p.account_id === 'mp-meteredpay-c.testnet') return Promise.reject(new Error('rpc down'));
+      }
+      return cannedFetch(url, opts);
+    };
+    mp.loadInstanceC();
+    await new Promise((r) => setTimeout(r, 500));
+    const cf = els['s7-live-c'].innerHTML;
+    check('S7 instance C shows failure banner + recorded 8 Nov state',
+      cf.includes('Live read failed') && cf.includes('recorded 8 Nov 2026 state'))
+    check('S7 instance C recorded state shows the five numbers, not a blank/zero balance',
+      cf.includes('<dt>Spent</dt><dd>0.1</dd>') && cf.includes('<dt>Available</dt><dd>0.4</dd>'));
+    ctx.fetch = realFetch;
+  }
+  // S4 seller console: withdrawn comes from the live RPC value (canned
+  // 0.2), never hardcoded text — stays true whatever a later withdraw does.
+  els['seller-buyer'].value = 'freeze1011-buyer.testnet';
+  mp.loadSeller();
+  await new Promise((r) => setTimeout(r, 300));
+  const s4 = els['seller-result'].innerHTML;
+  check('S4 shows withdrawn 0.2 from live RPC, not a hardcoded 0',
+    s4.includes('<dt>Withdrawn</dt><dd>0.2 testnet NEAR</dd>') && s4.includes('<dt>Earned (not yet withdrawn)</dt><dd>0.8 testnet NEAR</dd>'))
 }
 
 if (failures.length) { console.error('VERIFY FAILED: ' + failures.join('; ')); process.exit(1); }

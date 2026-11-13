@@ -131,6 +131,35 @@ node buyer.mjs --buyer <fresh-buyer>.testnet --mode demo --tag demo
 # (Or run ./replay.sh against your instance — same flow, one command.)
 ```
 
+## Step 7 — Getting paid: withdraw your earnings
+
+`withdraw()` pays exactly your `earned` balance to you, the registered
+seller, and only to you. It takes no arguments and needs no attached
+deposit. Rules (read from `src/lib.rs`, proven live on instance B,
+13 Nov 2026 — full proof: `seller-api/WITHDRAW_PROOF.md`):
+
+- Seller-only: any other caller is rejected ("Only the seller can withdraw").
+- All at once: it pays exactly `earned`, sets `earned` to 0, and adds the
+  amount to `withdrawn`. There is no partial withdraw.
+- A second withdraw with `earned` at 0 is rejected ("Nothing to withdraw").
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+near contract call-function as-transaction <your-contract>.testnet withdraw \
+  json-args '{}' prepaid-gas '100.000 TeraGas' attached-deposit '0 NEAR' \
+  sign-as <your-seller>.testnet network-config testnet sign-with-keychain send
+# Check the result afterwards (a Promise return carries no JSON value):
+# near contract call-function as-transaction <your-contract>.testnet get_seller_balance \
+#   json-args '{"seller": "<your-seller>.testnet"}' prepaid-gas '100.000 TeraGas' \
+#   attached-deposit '0 NEAR' sign-as <your-seller>.testnet network-config testnet sign-with-keychain send
+```
+
+Live example (instance B, 13 Nov 2026): seller `mp-seller2.testnet`
+withdrew its 0.2 earned — tx
+https://testnet.nearblocks.io/txns/AYuTEzgJneJ9kVPJ9cWftR8BFvHpsuM1AJcasguRjcr5
+— and its balance went earned 0.2 → **0**, withdrawn 0 → **0.2**; the
+seller wallet received 0.2 testnet NEAR minus ~0.0002 gas.
+
 ## After you are live
 
 - Your instance is yours: the frozen contract stays the

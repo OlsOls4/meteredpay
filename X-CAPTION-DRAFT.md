@@ -31,6 +31,12 @@ in order instead, and link the video in the reply.
 Reply (posted by the human with the post):
 > Repo: https://github.com/OlsOls4/meteredpay — testnet contract: apathetic-party.testnet. Testnet only, no production-network funds, no intent-based settlement in the demo path. The demo seller is a demonstrator service, not a live seller listing.
 
+**Post 2 (OPTIONAL thread reply — draft only, Olly publishes if he wants it):**
+
+> The video shows one service. The same contract also pays a second seller, a deterministic summariser at 0.05/call on a third instance — and the repo proves the failure paths on-chain: a dishonest buyer detected, three forged claims rejected.
+
+**Character count: 241 characters** — within X's 280-character free-post limit. Points at the Wave 6 breadth the video doesn't show: second service (summariser, instance C), second seller, dishonest-buyer demo, live attack suite. All four are proven in the repo (SECOND_SERVICE_APPENDIX.md, MULTI_SELLER_APPENDIX.md, DISHONEST_BUYER_DEMO.md, ATTACK_SUITE_APPENDIX.md); no new claim is made here.
+
 Pre-post checklist (day 13, before the URL is recorded): video attached
 (or 5 screenshots in order); caption states "Built at NEAR HACKATHON"
 (first line); tags present; caption length verified ≤280 chars (256,

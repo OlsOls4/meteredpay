@@ -584,6 +584,40 @@ const sellerBal = await view('get_seller_balance', {});
 const calls = await view('list_calls', { buyer_account_id: BUYER, from_index: '0', limit: '100' });
 const refusals = await view('list_refusals', { buyer_account_id: BUYER, from_index: '0', limit: '100' });
 log('final', { bal: finalBal, seller: sellerBal, seller_registered: sellerRegistered, registered_seller_account_id: SELLER, ...(endpointSellerAccountId ? { endpoint_seller_account_id: endpointSellerAccountId } : {}), calls: calls.map((c) => ({ call_id: c.call_id, status: c.status })), refusals: refusals.map((r) => ({ call_id: r.call_id, reason: r.reason })) });
+// F1/F2 (Wave 6, replay integrity): ASSERT the frozen final state —
+// a replay that ends with the wrong balances is a FAILED replay, not
+// a demo that "completed". In particular a seller-down run used to
+// print DEMO COMPLETE and exit 0 with spent 0 (both "success" calls
+// silently claimed invalid_response); this assertion kills that
+// false positive: spent must be exactly two deducted calls. Demo and
+// replay modes both end with two successes, so the expected state is
+// the same for both: deposit --deposit / held 0 / spent 2x price /
+// available deposit-2x price / cap --cap. Assertable only when the
+// starting deposit is known: a fresh buyer, or --skip-setup (whose
+// deposit/cap were already asserted to match the flags). A buyer
+// with an unknown pre-existing deposit skips the assertion with a
+// loud note instead of a false pass.
+if (!SINGLE) {
+  const assertable = BigInt(before.deposit) === 0n || SKIP_SETUP;
+  if (assertable) {
+    const priceYocto = BigInt(sellerInfo.price_per_call);
+    const expectedFinal = {
+      deposit: parseNear(DEPOSIT_NEAR),
+      held: 0n,
+      spent: 2n * priceYocto,
+      available: parseNear(DEPOSIT_NEAR) - 2n * priceYocto,
+      cap: parseNear(CAP_NEAR),
+    };
+    const mismatch = Object.entries(expectedFinal).find(([k, v]) => BigInt(finalBal[k]) !== v);
+    if (mismatch) {
+      throw new Error(`FINAL STATE ASSERTION FAILED: ${mismatch[0]} is ${fmtNear(finalBal[mismatch[0]])}, expected ${fmtNear(mismatch[1])} (deposit=${fmtNear(finalBal.deposit)} held=${fmtNear(finalBal.held)} spent=${fmtNear(finalBal.spent)} available=${fmtNear(finalBal.available)} cap=${fmtNear(finalBal.cap)}). This replay did NOT reproduce the frozen final state — do not treat it as a successful replay.`);
+    }
+    console.log(`FINAL STATE ASSERTED: deposit=${fmtNear(finalBal.deposit)} held=${fmtNear(finalBal.held)} spent=${fmtNear(finalBal.spent)} available=${fmtNear(finalBal.available)} cap=${fmtNear(finalBal.cap)}`);
+    log('final-state-asserted', { bal: finalBal });
+  } else {
+    console.log('NOTE: buyer had a pre-existing deposit — final-state assertion skipped (not a fresh-buyer replay).');
+  }
+}
 if (SINGLE) {
   singleOut({
     mode: 'single', buyer: BUYER, ok: true, call_id: singleResult.call_id,

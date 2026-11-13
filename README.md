@@ -8,6 +8,10 @@ calls released (held amount released, never deducted).
 No intent-based settlement is used. Testnet NEAR has no real-world
 value.**
 
+**Prove it in 60 seconds, install nothing:** `./replay.sh verify-only --log buyer/runs/<run>.jsonl`
+re-checks all 11 transactions of a recorded run against the testnet explorer with curl + python3
+only (42 s measured) — no account, no seller, no install. Full replay: `./replay.sh` (§2.3, §2.6).
+
 - Demo dashboard: `dashboard/` (static; open `dashboard/index.html`
   or serve it — see §2.3)
 - Contract on the testnet explorer:
@@ -35,26 +39,39 @@ illustrative £0.01 per call that is £365 a year for work that never
 happened (illustrative only — no real usage data; the demo price is
 0.1 testnet NEAR per call and testnet NEAR has no monetary value).
 
-The x402 distinction (corrected — see Council wave 3, R1, and final
-council, researchers F-R1b): x402 lets agents pay for APIs, and its
+The x402 distinction (corrected 13 Nov 2026 — Judge 3, F2): x402 lets agents pay for APIs, and its
 newer `auth-capture` scheme can hold funds in escrow — the escrow
-contract holds the funds, but the *success condition* lives with the
-captureAuthorizer (facilitator or its contract) — no x402 scheme lets
-the payer's verified success receipt gate capture, and the client's
-reclaim exists only after the capture deadline (x402-foundation
-`auth-capture` spec, `scheme_auth_capture.md`).
+contract holds the funds, and the capture decision lives with the
+captureAuthorizer, which in the facilitator-submits flow is the
+facilitator or any smart contract that ends up calling the escrow (the
+spec's own example is an arbiter contract with dispute logic). So
+`auth-capture` *permits* a contract to gate capture — but no
+default/shipped x402 flow gates capture on the payer's verified success
+receipt, and the client's reclaim exists only after the capture
+deadline (x402-foundation `auth-capture` spec,
+`scheme_auth_capture.md`, re-checked 13 Nov 2026).
 x402's `authorization` flow (the default, preferred) settles only
 after the resource handler succeeds, and `auth-capture` holds funds
-in escrow with capture, void, or refund needing the seller's consent,
-relayed by a facilitator — the party being paid decides whether it
-gets paid. MeteredPay inverts that: the seller cannot mark its own
-calls successful; only the buyer's verified, signed success receipt
-triggers a deduction. Neither x402 scheme puts the success condition
-in a contract the payer can verify and replay. Agent
+in escrow with capture, void, or refund decided by the captureAuthorizer
+(facilitator or its contract) — the decision sits with the paid side,
+not with the payer. MeteredPay implements the gating no shipped x402
+flow does: the seller cannot mark its own calls successful; only the
+buyer's verified, signed success receipt triggers a deduction. No
+default x402 flow puts the success condition in a contract the payer
+can verify and replay. Agent
 Market holds job payments until a human accepts the work — but that
 is a marketplace with disputes and a fee, not a per-call primitive.
 Spend Guard, built in this same hackathon, caps what an agent may
-spend — but it pays for failures inside the cap. MeteredPay is the
+spend — but it pays for failures inside the cap. AgentGuard, also in
+this hackathon, is a spending firewall — vault factory with no
+full-access key, one-way rule locking, a shared scam registry, a hosted
+console, and an MCP server on npm — and its vault decides paid/held/
+blocked on policy (caps, allowlist, registry), so a call that passes
+policy is paid whether or not the work succeeded (agentguard.app,
+checked live 13 Nov 2026). MeteredPay is the complementary primitive
+on the other side of the same payment: the deduction happens only on
+the buyer's verified, payer-signed success receipt; a failed call is
+released, never deducted. MeteredPay is the
 missing primitive: a NEAR contract where success itself is the
 payment trigger. The buyer prepays, the contract deducts 0.1 testnet
 NEAR only on a buyer-verified, payer-signed success receipt, releases
@@ -124,12 +141,15 @@ buyer → seller API → success receipt (buyer-verified, payer-signed)
   the faucet-sponsored flow (testnet only):
   ```bash
   near account create-account sponsor-by-faucet-service <buyer>.testnet \
-    autogenerate-new-keypair save-to-legacy-keychain
+    autogenerate-new-keypair --signature-scheme ed25519 save-to-legacy-keychain network-config testnet create
   ```
   This writes the key to `~/.near-credentials/testnet/<buyer>.json`,
   which the buyer script reads. The faucet funds the new account with
-  testnet NEAR. The command is interactive — run it in a terminal, not
-  in a script. Alternative: create an account at
+  testnet NEAR. The trailing `create` answers the final confirm prompt,
+  so this form also works headless — the shorter form without
+  `network-config testnet` and `create` prompts instead and fails on
+  non-TTY stdin ("The input device is not a TTY"). If it still prompts
+  in a terminal, just press Enter at each prompt (defaults are correct). Alternative: create an account at
   https://testnet.mynearwallet.com and fund it from
   https://near-faucet.io.
 - Your wallet needs faucet testnet NEAR **beyond the 0.5 deposit**:
@@ -394,6 +414,8 @@ Each tx was re-checked with an RPC `tx` query (signers
 RPC, `https://archival-rpc.testnet.near.org` — the public RPC
 returns `NOT_OBSERVED` for them.)
 
+**Single-signature attacks rejected on-chain (13 Nov 2026).** Fresh buyer `mp-attack-w6c.testnet`, frozen contract: seller-only success claim rejected — https://testnet.nearblocks.io/txns/956D3ivyYzfU2fGrWfiroLxdShV913y267fz5E4Jbb1S (`Invalid buyer signature`); buyer-only success claim rejected — https://testnet.nearblocks.io/txns/F3nW5SYcmssBEuYW16Arz4og4Rz4282SumCesgUWJphJ (`Invalid seller signature`); forged seller-error claim rejected — https://testnet.nearblocks.io/txns/D85xPbcHqeN4MK4kLM18kf1vFcko2pZt6bQJZwNJ9cUV (`Invalid seller error signature`). All three calls stayed `paid`, balances unchanged (deposit 0.5 / held 0.3 / spent 0 / available 0.2 / cap 0.5). Full proof: `ATTACK_SUITE_APPENDIX.md`.
+
 **Dishonest buyer (deliberate cheat, 8 Nov 2026).** The seller
 served a genuine signed success for call `dishonest-001`; the buyer
 instead submitted `submit_failure` with no evidence. The seller's
@@ -430,8 +452,8 @@ available 0.3 / cap 0.2.
 This run is the proof that the days 8–9 changes did not break the
 judge replay: same contract, same steps, same final state. Final
 balances verified on-chain via `get_buyer_balance`: deposit 0.5 /
-held 0 / spent 0.2 / available 0.3 / cap 0.2. Seller earned 2.0
-testnet NEAR (cumulative across all buyers), withdrawn 0.2.
+held 0 / spent 0.2 / available 0.3 / cap 0.2. Seller earned 4.6
+testnet NEAR (cumulative across all buyers, re-read live 13 Nov 2026 — grows 0.2 per replay), withdrawn 0.2.
 
 **Replay wall-clock (measured 5 Nov 2026).** Full replay
 (`./replay.sh`) measured **240 s (~4 min)** once Node + near-cli
@@ -482,9 +504,18 @@ steps, same final state, a fresh buyer.
 - The frozen contract is `apathetic-party.testnet` and stays live on
   testnet. The same text is on dashboard S5.
 - A judge needs only: a testnet account (faucet-funded, §2.3), this
-  repo, and Steps 1–6 above. No key, token, or permission from the
-  builder. The dashboard is read-only; the buyer script runs locally
-  with the judge's own key.
+  repo, and Steps 1–6 above — plus the demonstrator seller API, which
+  signs with the builder's seller key; `replay.sh` starts it from the
+  repo when the seller key is present. No builder key is needed at all
+  for the judge-owned replay: `./replay-judge-owned.sh` deploys the same
+  frozen wasm (SHA-256 verified, code hash verified) to the judge's own
+  testnet account, inits it with the judge's own seller key, and runs
+  the buyer end-to-end — proved 13 Nov 2026 on `mp-judge-w6.testnet`
+  (deploy tx `HBWdw57zuk5mPe6TPLZ4rZTwGc8AkDDHiWNBF3gGw8Ui`, final state
+  0.5 / 0 / 0.2 / 0.3 / 0.2) and again on `mp-judge-rvdqpm.testnet`
+  (deploy tx `CsHq3vTYVN3K93knR524A2SkB7qUbQw6vV7wBPR1DzNZ`, same final
+  state). The dashboard is read-only; the buyer
+  script runs locally with the judge's own key.
 - Fresh-buyer path: run the buyer script with a fresh testnet account
   and repeat Steps 2–6. The contract state is per-buyer, so one
   judge's replay does not disturb another's.
@@ -656,17 +687,18 @@ pass, and no URL is invented.
 
 The x402 distinction: x402's `authorization` flow settles only after
 success and `auth-capture` holds funds in escrow with capture, void,
-or refund needing the seller's consent, relayed by a facilitator —
-the party being paid decides whether it gets paid. The escrow
-contract holds the funds, but the *success condition* lives with the
-captureAuthorizer (facilitator or its contract) — no x402 scheme lets
-the payer's verified success receipt gate capture, and the client's
+or refund decided by the captureAuthorizer (facilitator or its
+contract) — the decision sits with the paid side, not with the payer.
+The escrow contract holds the funds, and `auth-capture` *permits* a
+contract to gate capture (the spec's own example is an arbiter
+contract with dispute logic) — but no default/shipped x402 flow gates
+capture on the payer's verified success receipt, and the client's
 reclaim exists only after the capture deadline (x402-foundation
-`auth-capture` spec, `scheme_auth_capture.md`). MeteredPay inverts
-that: the seller cannot mark its own calls successful; only the
-buyer's verified, signed success receipt triggers a deduction.
-Neither x402 scheme puts the success condition in a contract the
-payer can verify and replay. MeteredPay's
+`auth-capture` spec, `scheme_auth_capture.md`, re-checked 13 Nov 2026).
+MeteredPay implements the gating no shipped x402 flow does: the seller
+cannot mark its own calls successful; only the buyer's verified, signed
+success receipt triggers a deduction. No default x402 flow puts the
+success condition in a contract the payer can verify and replay. MeteredPay's
 claim is the bundle, not the single word "success-conditional":
 buyer-verified hash, payer-signed receipt, on-chain cap refusal,
 buyer-claimed release, a 600 s backstop, and a dispute-audit view.

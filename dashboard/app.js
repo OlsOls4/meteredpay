@@ -2,9 +2,10 @@
 // READ-ONLY: this page never signs, never sends a contract transaction,
 // and never asks for a private key or seed phrase. Every money claim
 // links to a real testnet explorer transaction. Wording follows
-// GLOSSARY.md (frozen): "Refunded — held amount released, never
-// deducted", five numbers everywhere, no red, TESTNET on every money
-// surface. Contract: apathetic-party.testnet, seller tedious-sea.testnet,
+// Wording (Wave 6, 13 Nov 2026): "Refunded" is replaced by
+// hold-released wording ("Hold released — never deducted") — a failed
+// call was never deducted, so "refunded" misleads. Five numbers
+// everywhere, no red, TESTNET on every money surface. Contract: apathetic-party.testnet, seller tedious-sea.testnet,
 // price 0.1 testnet NEAR/call, demo deposit 0.5, cap 0.2, buyer wait
 // 30 s, backstop 600 s.
 (function () {
@@ -38,7 +39,7 @@
       responseHash: null,
       sellerOutput: 'Seller error DEMO_SELLER_ERROR — "Demonstrator seller failed this call on purpose (scenario=fail)." Signed seller error attestation present; the buyer submitted the failure claim with that evidence. (The error attestation hash is not recorded in the freeze1011 run log.)',
       sellerService: 'meteredpay-schema-validate (returned a signed seller error attestation, not a successful output)',
-      amount: 'Refunded — held amount released, never deducted (0 testnet NEAR deducted)',
+      amount: 'Hold released — never deducted (0 testnet NEAR deducted)',
       balAfter: { deposit: '0.5', held: '0', spent: '0.1', available: '0.4', cap: '0.2' },
       note: 'The buyer submitted a failure claim; that claim released the hold.'
     },
@@ -50,7 +51,7 @@
       responseHash: null,
       sellerOutput: 'No seller response within the 30-second buyer wait. No seller evidence was supplied — the buyer submitted a timeout claim without seller evidence, and the hold was released on that claim.',
       sellerService: 'meteredpay-schema-validate (no response received within the 30-second buyer wait)',
-      amount: 'Refunded — held amount released, never deducted (0 testnet NEAR deducted)',
+      amount: 'Hold released — never deducted (0 testnet NEAR deducted)',
       balAfter: { deposit: '0.5', held: '0', spent: '0.1', available: '0.4', cap: '0.2' },
       note: 'No receipt arrived in 30 s, so the buyer claimed timeout; that claim released the hold.'
     },
@@ -282,7 +283,7 @@
   // ------------------------------------------------------------------
   // Views
   // ------------------------------------------------------------------
-  var VIEWS = ['s1', 's2', 's3', 's4', 's5', 's6'];
+  var VIEWS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7'];
   var currentCall = 'freeze1011-success-001';
   var s2AutoLoaded = false;
   function show(view) {
@@ -295,6 +296,7 @@
     if (view === 's4') loadSeller();
     if (view === 's5') loadReplay();
     if (view === 's6') loadTwoSellers();
+    if (view === 's7') loadInstanceC();
     announce('Showing view ' + view);
   }
   function route() {
@@ -469,7 +471,7 @@
         out += '<p>Balance could not be loaded.</p>';
       }
       var rows = calls.map(function (c) {
-        var word = { 'paid': 'Requested — price held', 'success-deducted': 'Succeeded', 'failed-refunded': 'Released (refunded)', 'timeout-refunded': 'Released (timeout)', 'refused': 'Refused' }[c.status] || c.status;
+        var word = { 'paid': 'Requested — price held', 'success-deducted': 'Succeeded', 'failed-refunded': 'Hold released', 'timeout-refunded': 'Hold released (timeout)', 'refused': 'Refused' }[c.status] || c.status;
         var badge = c.status === 'success-deducted' ? 'ok' : (c.status === 'refused' ? 'neutral' : 'amber');
         var deducted = c.status === 'success-deducted' ? esc(fmtYocto(c.price)) + ' testnet NEAR' : '0 testnet NEAR';
         return '<tr><td><span class="mono">' + esc(c.call_id) + '</span></td>' +
@@ -491,7 +493,7 @@
           '<td>' + rowExplorerHtml({ call_id: r.call_id }, acct) + '</td></tr>';
       }).join('') || '<tr><td colspan="5">No refusals recorded for this buyer.</td></tr>';
       out += '<h3>Call history (newest first)</h3><div class="table-wrap"><table><thead><tr><th>Call</th><th>Result</th><th>Price</th><th>Deducted</th><th>Balance before</th><th>Balance after</th><th>Response hash</th><th>Failure reason</th><th>Explorer</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-        (callsOk ? '<p class="small muted">Balance before/after per row are reconstructed from the call history and the current deposit; they are exact when the deposit has not changed since the call. Deducted is 0 on refunded/refused rows — a failed call is never deducted. The five-number balance above is read live and is always exact.</p>'
+        (callsOk ? '<p class="small muted">Balance before/after per row are reconstructed from the call history and the current deposit; they are exact when the deposit has not changed since the call. Deducted is 0 on hold-released/refused rows — a failed call is never deducted. The five-number balance above is read live and is always exact.</p>'
           : '<p class="small muted">Call history could not be loaded.</p>') +
         '<h3>Refusals</h3><div class="table-wrap"><table><thead><tr><th>Call</th><th>Reason (verbatim)</th><th>Balances at refusal</th><th>Balance after</th><th>Explorer</th></tr></thead><tbody>' + refRows + '</tbody></table></div>' +
         rpcStatusHtml();
@@ -664,7 +666,7 @@
         var earnedAfter = liveEarnedAfter(calls);
         var rows = callsOk
           ? (calls.map(function (c) {
-            var word = { 'paid': 'Requested — price held', 'success-deducted': 'Succeeded', 'failed-refunded': 'Released (refunded)', 'timeout-refunded': 'Released (timeout)', 'refused': 'Refused' }[c.status] || c.status;
+            var word = { 'paid': 'Requested — price held', 'success-deducted': 'Succeeded', 'failed-refunded': 'Hold released', 'timeout-refunded': 'Hold released (timeout)', 'refused': 'Refused' }[c.status] || c.status;
             return '<tr><td><span class="mono">' + esc(c.call_id) + '</span></td><td>' + esc(word) + '</td>' +
               '<td>' + (c.status === 'success-deducted' ? esc(fmtYocto(c.price)) + ' testnet NEAR earned' : '0 testnet NEAR earned') + '</td>' +
               '<td>' + esc(earnedAfter[c.call_id] || '—') + ' earned after this call</td>' +
@@ -757,8 +759,8 @@
   // must match dashboard/two-seller.json exactly (verify.mjs checks);
   // it is shown ONLY when the live read fails, labelled as recorded.
   var TWO_SELLER_RECORDED = [
-    { key: 'a', contract: 'mp-meteredpay-a.testnet', seller: 'tedious-sea.testnet', buyer: 'mp-l1a-buyer.testnet', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } },
-    { key: 'b', contract: 'mp-meteredpay-b.testnet', seller: 'mp-seller2.testnet', buyer: 'mp-l1b-buyer.testnet', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } }
+    { key: 'a', contract: 'mp-meteredpay-a.testnet', seller: 'tedious-sea.testnet', buyer: 'mp-l1a-buyer.testnet', price: '0.1', recorded: '6 Nov 2026', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } },
+    { key: 'b', contract: 'mp-meteredpay-b.testnet', seller: 'mp-seller2.testnet', buyer: 'mp-l1b-buyer.testnet', price: '0.1', recorded: '6 Nov 2026', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } }
   ];
   var twoSellerManifest = null;
   function loadTwoSellerManifest() {
@@ -779,8 +781,8 @@
     var ok = res.every(function (r) { return r.status === 'fulfilled'; });
     if (!ok) {
       var missing = ['seller registration', 'seller balance', 'buyer balance', 'call log'].filter(function (label, i) { return res[i].status !== 'fulfilled'; }).join(', ');
-      return head + '<div class="banner" role="alert"><strong>Live read failed (' + esc(missing) + ') — showing the recorded 6 Nov state below; retry.</strong> The recorded state is settled history, not a live read.</div>' +
-        '<p>Seller <span class="mono">' + esc(inst.seller) + '</span> · buyer <span class="mono">' + esc(inst.buyer) + '</span> (recorded 6 Nov 2026)</p>' +
+      return head + '<div class="banner" role="alert"><strong>Live read failed (' + esc(missing) + ') — showing the recorded ' + esc(inst.recorded) + ' state below; retry.</strong> The recorded state is settled history, not a live read.</div>' +
+        '<p>Seller <span class="mono">' + esc(inst.seller) + '</span> · buyer <span class="mono">' + esc(inst.buyer) + '</span> (recorded ' + esc(inst.recorded) + ')</p>' +
         fiveStaticHtml(inst.finalState) +
         '<p>Earned (not yet withdrawn): <strong>' + esc(inst.earned) + ' testnet NEAR</strong> · Withdrawn: ' + esc(inst.withdrawn) + ' testnet NEAR (recorded 6 Nov state).</p>';
     }
@@ -791,9 +793,9 @@
     var time = new Date().toLocaleTimeString();
     var status = (matchSeller && matchEarned && matchBal)
       ? '<p class="small">Live read ' + esc(time) + ' — matches the recorded final state.</p>'
-      : '<div class="banner" role="alert"><strong>Live read ' + esc(time) + ' — differs from the recorded 6 Nov state.</strong> Seller match: ' + (matchSeller ? 'yes' : 'NO') + '; earned match: ' + (matchEarned ? 'yes' : 'NO') + '; buyer balance match: ' + (matchBal ? 'yes' : 'NO') + '. The live values below are what the contract returns now.</div>';
+      : '<div class="banner" role="alert"><strong>Live read ' + esc(time) + ' — differs from the recorded ' + esc(inst.recorded) + ' state.</strong> Seller match: ' + (matchSeller ? 'yes' : 'NO') + '; earned match: ' + (matchEarned ? 'yes' : 'NO') + '; buyer balance match: ' + (matchBal ? 'yes' : 'NO') + '. The live values below are what the contract returns now.</div>';
     return head + status +
-      '<p>Seller <span class="mono">' + esc(s.seller_account_id) + '</span> · price 0.1 testnet NEAR per successful call · backstop ' + esc(String(s.call_timeout_seconds)) + ' s</p>' +
+      '<p>Seller <span class="mono">' + esc(s.seller_account_id) + '</span> · price ' + esc(inst.price) + ' testnet NEAR per successful call · backstop ' + esc(String(s.call_timeout_seconds)) + ' s</p>' +
       '<p>Earned (not yet withdrawn): <strong>' + esc(fmtYocto(bal.earned)) + ' testnet NEAR</strong> · Withdrawn: ' + esc(fmtYocto(bal.withdrawn)) + ' testnet NEAR (live).</p>' +
       '<h4>Buyer <span class="mono">' + esc(inst.buyer) + '</span> — live five-number balance</h4>' +
       fiveHtml({ deposit: bb.deposit, held: bb.held, spent: bb.spent, available: bb.available, cap: bb.budget_cap });
@@ -842,6 +844,54 @@
     }).catch(function () {
       if (aEl) aEl.innerHTML = '<div class="banner" role="alert"><strong>Live read failed — showing the recorded 6 Nov state below; retry.</strong></div>';
       if (bEl) bEl.innerHTML = '<div class="banner" role="alert"><strong>Live read failed — showing the recorded 6 Nov state below; retry.</strong></div>';
+    });
+  }
+
+
+  // S7 — instance C, summariser (live Layer 2). Recorded fallback state
+  // below must match dashboard/instance-c.json exactly (verify.mjs
+  // checks); it is shown ONLY when the live read fails, labelled as recorded.
+  var INSTANCE_C_RECORDED = { key: 'c', contract: 'mp-meteredpay-c.testnet', seller: 'mp-seller2.testnet', buyer: 'mp-rf2-buyer.testnet', price: '0.05', recorded: '8 Nov 2026', finalState: { deposit: '0.5', held: '0', spent: '0.1', available: '0.4', cap: '0.1' }, earned: '0.1', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } };
+  var instanceCManifest = null;
+  function loadInstanceCManifest() {
+    if (instanceCManifest) return Promise.resolve(instanceCManifest);
+    return fetch('./instance-c.json').then(function (r) { return r.json(); }).then(function (j) { instanceCManifest = j; return j; }).catch(function () { return null; });
+  }
+  function loadInstanceC() {
+    var cEl = $('s7-live-c'), claimsEl = $('s7-claims');
+    if (cEl) cEl.innerHTML = '<p aria-live="polite">Loading live state for instance C…</p>';
+    loadInstanceCManifest().then(function (man) {
+      var inst = INSTANCE_C_RECORDED;
+      var min = man ? man.instances.filter(function (x) { return x.contract === inst.contract; })[0] : null;
+      return Promise.allSettled([
+        rpcViewFor('get_seller', {}, inst.contract),
+        rpcViewFor('get_seller_balance', {}, inst.contract),
+        rpcViewFor('get_buyer_balance', { account_id: inst.buyer }, inst.contract),
+        rpcViewFor('list_calls', { buyer_account_id: inst.buyer, from_index: '0', limit: '50' }, inst.contract)
+      ]).then(function (res) { return { inst: inst, res: res, manifestInst: min }; });
+    }).then(function (d) {
+      if (cEl) cEl.innerHTML = s6PanelHtml(d.inst, d.res);
+      if (claimsEl) {
+        if (d.res[3].status === 'fulfilled') {
+          var txMap = {};
+          if (d.manifestInst) {
+            var m = twoSellerClaimTxMap(d.manifestInst);
+            d.res[3].value.forEach(function (c) {
+              if (c.call_id.slice(-9) === '-fail-001' && m.fail) txMap[c.call_id] = { tx: m.fail };
+              if (c.call_id.slice(-12) === '-timeout-001' && m.timeout) txMap[c.call_id] = { tx: m.timeout };
+            });
+          }
+          claimsEl.innerHTML = claimsTableHtml(d.inst.buyer, d.res[3].value, txMap);
+        } else {
+          var cs = d.inst.claimSummary;
+          claimsEl.innerHTML = '<h3>Buyer claim transparency — <span class="mono">' + esc(d.inst.buyer) + '</span></h3>' +
+            '<p>Live call log could not be loaded — recorded 8 Nov state: calls ' + cs.calls + ' · successes ' + cs.successes + ' · failure claims ' + cs.failureClaims + ' · timeout claims ' + cs.timeoutClaims + ' · refusals ' + cs.refusals + '. Claim transactions are in the recorded table above.</p>';
+        }
+      }
+      var ok = d.res.every(function (r) { return r.status === 'fulfilled'; });
+      announce('Instance C live read finished: ' + (ok ? 'live.' : 'recorded fallback.'));
+    }).catch(function () {
+      if (cEl) cEl.innerHTML = '<div class="banner" role="alert"><strong>Live read failed — showing the recorded 8 Nov state below; retry.</strong></div>';
     });
   }
 
@@ -894,6 +944,8 @@
     if (healthBtn) healthBtn.addEventListener('click', checkSellerHealth);
     var s6RetryBtn = $('s6-retry');
     if (s6RetryBtn) s6RetryBtn.addEventListener('click', loadTwoSellers);
+    var s7RetryBtn = $('s7-retry');
+    if (s7RetryBtn) s7RetryBtn.addEventListener('click', loadInstanceC);
     // F6: copy buttons on S2/S5 shell commands + the S1 response hash.
     // data-copy carries the literal text; data-copy-from copies the
     // text of a sibling <code> element (so the command appears once).
@@ -931,5 +983,5 @@
 
   // ------------------------------------------------------------------
   // Exposed for the headless verification harness (not part of the UI).
-  window.__meteredpay = { PLAYBACK: PLAYBACK, renderPlayback: renderPlayback, renderS3: renderS3, route: route, loadBuyer: loadBuyer, loadReplay: loadReplay, loadSeller: loadSeller, loadTwoSellers: loadTwoSellers, claimStats: claimStats, stakesYear: stakesYear, stakesCalc: stakesCalc, fmtYocto: fmtYocto, fiveHtml: fiveHtml, fiveStaticHtml: fiveStaticHtml, guidedStart: guidedStart, guidedNext: guidedNext, guidedBack: guidedBack, guidedShowTimeout: guidedShowTimeout, guidedState: guidedState, renderGuided: renderGuided, runWaitDemo: runWaitDemo, skipWaitDemo: skipWaitDemo, rowExplorerHtml: rowExplorerHtml, liveBalanceAfter: liveBalanceAfter, liveBalanceBefore: liveBalanceBefore };
+  window.__meteredpay = { PLAYBACK: PLAYBACK, renderPlayback: renderPlayback, renderS3: renderS3, route: route, loadBuyer: loadBuyer, loadReplay: loadReplay, loadSeller: loadSeller, loadTwoSellers: loadTwoSellers, loadInstanceC: loadInstanceC, claimStats: claimStats, stakesYear: stakesYear, stakesCalc: stakesCalc, fmtYocto: fmtYocto, fiveHtml: fiveHtml, fiveStaticHtml: fiveStaticHtml, guidedStart: guidedStart, guidedNext: guidedNext, guidedBack: guidedBack, guidedShowTimeout: guidedShowTimeout, guidedState: guidedState, renderGuided: renderGuided, runWaitDemo: runWaitDemo, skipWaitDemo: skipWaitDemo, rowExplorerHtml: rowExplorerHtml, liveBalanceAfter: liveBalanceAfter, liveBalanceBefore: liveBalanceBefore };
 })();

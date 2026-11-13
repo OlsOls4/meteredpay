@@ -57,7 +57,7 @@
 //       On Render set HOST=0.0.0.0 (PORT comes from Render's $PORT).
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { canonicalStringify, successBody, errorBody, responseHash, sellerAttestationMessage, sellerErrorMessage } from '../shared/canonical.mjs';
@@ -109,17 +109,26 @@ try {
 }
 
 let keyPath = process.env.SELLER_KEY_PATH || join(homedir(), '.near-credentials', 'testnet', SELLER_ACCOUNT_ID + '.json');
+let tempKeyDir = null; // SELLER_KEY_JSON temp dir (F8, Wave 6): deleted once the key is in memory.
 if (process.env.SELLER_KEY_JSON) {
   // Hosted mode (e.g. a Render env var): the whole credential-file JSON
   // arrives as an env var. Write it to a mode-600 temp file at startup
   // and use that path; the key content is never logged. Key-handling
   // note: seller-api/RENDER_HOSTING.md.
-  const dir = mkdtempSync(join(tmpdir(), 'meteredpay-seller-key-'));
-  keyPath = join(dir, SELLER_ACCOUNT_ID + '.json');
+  tempKeyDir = mkdtempSync(join(tmpdir(), 'meteredpay-seller-key-'));
+  keyPath = join(tempKeyDir, SELLER_ACCOUNT_ID + '.json');
   writeFileSync(keyPath, process.env.SELLER_KEY_JSON, { mode: 0o600 });
   console.log('[seller] seller key loaded from SELLER_KEY_JSON env var (mode-600 temp file; key never logged)');
 }
-const sellerKey = loadTestnetKey(SELLER_ACCOUNT_ID, keyPath);
+let sellerKey;
+try {
+  sellerKey = loadTestnetKey(SELLER_ACCOUNT_ID, keyPath);
+} finally {
+  // F8 (Wave 6): the temp file held the seller's private key on disk
+  // and was never deleted. The key is now in memory (or startup has
+  // failed), so remove the temp file + directory immediately.
+  if (tempKeyDir) rmSync(tempKeyDir, { recursive: true, force: true });
+}
 if (sellerPublicKey && sellerKey.publicKey !== sellerPublicKey) {
   throw new Error('Seller credential public key does not match the key registered on the contract — refusing to start.');
 }

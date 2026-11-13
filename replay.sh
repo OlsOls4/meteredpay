@@ -210,7 +210,10 @@ fi
 SELLER_STARTED=0
 if ! curl -s -m 5 "$SELLER_URL/health" >/dev/null 2>&1; then
   echo "== Starting demonstrator seller API ($SELLER_URL) =="
-  (cd seller-api && node server.mjs > /tmp/meteredpay-seller.log 2>&1 & echo $! > /tmp/meteredpay-seller.pid)
+  # exec: the background job's PID ($!) must BE node, not a wrapper
+  # subshell — otherwise the EXIT trap kills the wrapper and the
+  # seller leaks (same bug found in replay-judge-owned.sh, 13 Nov 2026).
+  (cd seller-api && exec node server.mjs > /tmp/meteredpay-seller.log 2>&1 & echo $! > /tmp/meteredpay-seller.pid)
   SELLER_STARTED=1
   for _ in $(seq 1 30); do
     curl -s -m 5 "$SELLER_URL/health" >/dev/null 2>&1 && break
@@ -239,11 +242,16 @@ if [ "$STATUS" -ne 0 ]; then
   echo "Buyer run failed (exit $STATUS). See the output above." >&2
   exit "$STATUS"
 fi
+# F1/F2 (Wave 6): the buyer script now asserts the frozen final state
+# itself, but verify it a second time here from a fresh read-only RPC
+# view, so a replay that "completed" with the wrong balances can
+# never print REPLAY OK.
+echo "== Asserting frozen final state (deposit 0.5 / held 0 / spent 0.2 / available 0.3 / cap 0.2) =="
+(cd buyer && node assert-final-state.mjs --buyer "$BUYER") || { echo "Final-state assertion FAILED — this replay did NOT reproduce the frozen final state." >&2; exit 1; }
 echo "Expected final state: deposit 0.5 / held 0 / spent 0.2 / available 0.3 / cap 0.2 (testnet NEAR)."
 echo "REPLAY OK in ${ELAPSED}s."
 echo ""
 echo "Dashboard — open it to inspect this replay (buyer $BUYER):"
 echo "  Local: http://127.0.0.1:8080/dashboard/"
 echo "  Serve it from the repo root first: python3 -m http.server 8080"
-echo "  (Hosted GitHub Pages dashboard: NOT deployed yet — needs the"
-echo "  repo-public approval; see dashboard/DEPLOY.md.)"
+echo "  (Hosted dashboard: https://olsols4.github.io/meteredpay/dashboard/)"
