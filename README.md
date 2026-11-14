@@ -8,7 +8,7 @@ calls released (held amount released, never deducted).
 No intent-based settlement is used. Testnet NEAR has no real-world
 value.**
 
-> **Why this matters** — A buyer agent pays only for a call it verified succeeded. A failed call releases its hold: deducted zero. The open problem, stated up front: v1 protects the buyer, not the seller — a buyer can claim failure after a genuine success and the seller's only defence today is detecting it afterwards (see §2.7). Next step that would prove this as a market: a hosted seller and one external buyer completing a full run (see 'What would prove this'). Submitted 14 Nov 2026 to the NEAR Hackathon (agents, open, business, security, defi); demo video v3.5 and X post linked above.
+> **Why this matters** — A buyer agent pays only for a call it verified succeeded. A failed call releases its hold: deducted zero. The open problem, stated up front: v1 protects the buyer, not the seller — a buyer can claim failure after a genuine success and the seller's only defence today is detecting it afterwards (see §2.7). Next step that would prove this as a market: a hosted seller and one external buyer completing a full run (see 'What would prove this'). Submitted 14 Nov 2026 to the NEAR Hackathon (agents, open, business, security, defi); demo video v3.5 and X post linked below.
 
 > **Novelty, precisely stated** — x402's auth-capture spec lists metered work priced on completion as a use case and permits an arbiter contract to gate capture, so the metering shape is not new. What is new on NEAR: the payer's verified, signed success receipt is a necessary on-chain condition for every deduction — the veto sits with the payer, in a contract the payer can verify and replay. No shipped x402 flow on NEAR does that.
 
@@ -215,7 +215,9 @@ First-run time budget (15–45 min all-in on a clean machine):
 clone ~1 min; Node 24 install ~5–10 min (estimate); near-cli install
 ~2 min via the release binary, ~5–15 min via Cargo (Rust build,
 estimate); faucet account creation ~10 s (measured); demo run ~4 min
-(240 s measured); verify-only re-check 42 s (measured). The 240 s
+(240 s measured); verify-only re-check 42 s (measured 5 Nov 2026 on fresh
+logs; older logs re-check via the archival RPC and can take several
+minutes). The 240 s
 figure is the replay itself, not the all-in first-run time.
 
 ### Commands
@@ -562,7 +564,9 @@ are installed (faucet account creation ~10 s + demo itself
 ~230 s: 10 contract calls + one 30 s timeout wait; allow up to
 ~6 min for testnet block times). Verify-only
 (`./replay.sh verify-only`) took **42 s** for an 11-tx demo run
-log. A first replay on a clean machine is **15–45 min including
+log (measured 5 Nov 2026 on fresh logs; older logs re-check via the
+archival RPC and can take several minutes — 342 s observed 14 Nov 2026
+for the 9-day-old canonical log). A first replay on a clean machine is **15–45 min including
 toolchain install** (Node 24, near-cli-rs 0.30.1, Rust for the
 `cargo install` route) — the 240 s figure is the replay itself,
 not the all-in first-run time.
@@ -780,8 +784,8 @@ hackathon cap what an agent may spend. MeteredPay differs by
 mechanism, not by having a cap: it gates payment on the OUTCOME of
 the call, not on the ATTEMPT. A capped attempt still pays for a
 failure; a MeteredPay call pays only when the buyer verifies a signed
-success receipt. The attempt-gating field is five live implementations
-deep in this hackathon — Spend Guard, AgentGuard, Leash, Drip, Ark.
+success receipt. The attempt-gating field is two verified live implementations
+deep in this hackathon — Spend Guard, AgentGuard.
 A cap is table stakes; the outcome gate is the differentiator.
 
 - NEAR Agent Spend Guard (same hackathon): attempt-gating — a Rust
@@ -894,7 +898,7 @@ hash with explorer links) in `MULTI_SELLER_APPENDIX.md`:
   deploy+init tx `8J3X5o4PRgmW3ZnYW5ncF7HEKPPQ56mLAieCMRsWZsa2`.
   Fresh buyer `mp-l1b-buyer.testnet`, final 0.5/0/0.2/0.3/0.2 —
   the first deduction ever paid to `mp-seller2.testnet`.
-- Same wasm on all three contracts (frozen + both successors):
+- Same wasm on all four contracts (frozen + A + B + C):
   SHA-256 `c54ae8e9d657338ccc695d32689fac322aaa1d77b90fd90e0ed63f86decbb3b0`.
   A success receipt signed by the other seller's key was rejected
   on-chain on both instances ("Invalid seller signature"), proving
@@ -952,7 +956,9 @@ A hosted seller and one external buyer completing a full run. Steps:
    frozen contract), and **one external seller is paid** — which, on
    the frozen contract's single-seller limit, means that seller's own
    contract instance (see `SELLER_ONBOARDING.md`), with a real
-   deduction to its account.
+   deduction to its account. Note the two conditions happen on two
+   different contracts: the buyer run on the frozen contract, the paid
+   seller on its own instance.
 4. Record the run the same way the repo records its own: run log,
    tx hashes, final balances. A run with no log is not evidence.
 

@@ -813,7 +813,7 @@
   // as recorded.
   var TWO_SELLER_RECORDED = [
     { key: 'a', contract: 'mp-meteredpay-a.testnet', seller: 'tedious-sea.testnet', buyer: 'mp-l1a-buyer.testnet', price: '0.1', recorded: '6 Nov 2026', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } },
-    { key: 'b', contract: 'mp-meteredpay-b.testnet', seller: 'mp-seller2.testnet', buyer: 'mp-l1b-buyer.testnet', price: '0.1', recorded: '6 Nov 2026', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0.2', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } }
+    { key: 'b', contract: 'mp-meteredpay-b.testnet', seller: 'mp-seller2.testnet', buyer: 'mp-l1b-buyer.testnet', price: '0.1', recorded: '6 Nov 2026', withdrawn_date: '13 Nov 2026', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0.2', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } }
   ];
   var twoSellerManifest = null;
   function loadTwoSellerManifest() {
@@ -843,7 +843,7 @@
       return head + '<div class="banner" role="alert"><strong>Live read failed (' + esc(missing) + ') — showing the recorded ' + esc(inst.recorded) + ' state below; retry.</strong> The recorded state is settled history, not a live read.</div>' +
         '<p>Seller <span class="mono">' + esc(inst.seller) + '</span> · buyer <span class="mono">' + esc(inst.buyer) + '</span> (recorded ' + esc(inst.recorded) + ')</p>' +
         fiveStaticHtml(inst.finalState) +
-        '<p>Earned in total: <strong>' + esc(inst.earned) + ' testnet NEAR</strong> · Withdrawn: ' + esc(inst.withdrawn) + ' testnet NEAR · Current earned balance: ' + esc(decDiff(inst.earned, inst.withdrawn)) + ' testnet NEAR (recorded ' + esc(inst.recorded) + ' state).</p>';
+        '<p>Earned in total: <strong>' + esc(inst.earned) + ' testnet NEAR</strong> · Withdrawn: ' + esc(inst.withdrawn) + ' testnet NEAR' + (inst.withdrawn_date ? ' (' + esc(inst.withdrawn_date) + ')' : '') + ' · Current earned balance: ' + esc(decDiff(inst.earned, inst.withdrawn)) + ' testnet NEAR (recorded ' + esc(inst.recorded) + ' state).</p>';
     }
     var s = res[0].value, bal = res[1].value, bb = res[2].value;
     var matchSeller = s.seller_account_id === inst.seller;

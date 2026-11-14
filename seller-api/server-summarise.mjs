@@ -58,9 +58,27 @@
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { canonicalStringify, successBody, errorBody, responseHash, sellerAttestationMessage, sellerErrorMessage } from '../shared/canonical.mjs';
 import { ed25519Sign, loadTestnetKey } from '../shared/ed25519.mjs';
+import { appendAttestation } from './attestation-log.mjs';
+import { isBlocked } from './blocklist.mjs';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+// Attestation log for THIS seller (post-submission council, 14 Nov
+// 2026): the schema-validate seller's log (seller-api/attestations.jsonl)
+// is read by seller-audit.mjs against the frozen contract, whose
+// seller is tedious-sea.testnet — appending this seller's
+// (mp-seller2.testnet) attestations there would make every one of
+// them show UNVERIFIED in that audit. This instance keeps its own
+// log; audit it with: node seller-api/seller-audit.mjs --contract
+// mp-meteredpay-c.testnet --seller mp-seller2.testnet --log
+// seller-api/attestations-summarise.jsonl. ATTESTATION_LOG_PATH still
+// overrides the path (same helper, same five fields). The blocklist,
+// by contrast, is deliberately SHARED with server.mjs: one list of
+// buyers neither demonstrator seller will serve.
+const SUMMARISER_LOG_PATH = process.env.ATTESTATION_LOG_PATH || join(HERE, 'attestations-summarise.jsonl');
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT || 8789);
@@ -216,6 +234,14 @@ const server = createServer(async (req, res) => {
   if (typeof call_id !== 'string' || call_id === '' || typeof buyer_account_id !== 'string' || buyer_account_id === '') {
     return sendJson(res, 400, { status: 'failed', error_code: 'BAD_REQUEST', error_message: 'call_id and buyer_account_id are required strings.' });
   }
+  // Blocklist (post-submission council, 14 Nov 2026 — mirrors
+  // server.mjs): checked BEFORE any chain call or any work in POST
+  // /call — a blocked buyer is refused outright and the server does
+  // nothing for them. Same shared list (seller-api/blocked-buyers.json).
+  if (isBlocked(buyer_account_id)) {
+    console.log(`[seller] /call call_id=${call_id} buyer=${buyer_account_id} REFUSED (blocked buyer)`);
+    return sendJson(res, 403, { call_id, status: 'failed', error_code: 'BUYER_BLOCKED', error_message: `Buyer ${buyer_account_id} is blocked by this seller (see seller-api/blocked-buyers.json).` });
+  }
   // Resolve the service input to a plain text string. The canonical
   // shape is { text }; the { schema: "summarise", document: { text } }
   // shape is accepted for symmetry with the schema-validate seller.
@@ -266,6 +292,19 @@ const server = createServer(async (req, res) => {
   const canonical = successBody({ callId: call_id, output, sellerAccountId: SELLER_ACCOUNT_ID, priceYocto });
   const hash = responseHash(canonical);
   const sig = ed25519Sign(sellerKey.seedBytes, sellerAttestationMessage(call_id, hash));
+  // Attestation persistence (post-submission council, 14 Nov 2026 —
+  // mirrors server.mjs): retain the signed success attestation right
+  // after signing, so a later audit can compare it with the on-chain
+  // record. Best-effort: a logging failure must never change the
+  // signed response bytes or fail the call. Never logs the seller's
+  // private key (only the five attestation fields are written).
+  // Written to this seller's own log (see SUMMARISER_LOG_PATH above),
+  // not the schema-validate seller's attestations.jsonl.
+  try {
+    appendAttestation({ call_id, buyer: buyer_account_id, response_hash: hash, seller_signature: sig, timestamp: new Date().toISOString() }, SUMMARISER_LOG_PATH);
+  } catch (e) {
+    console.error(`[seller] WARNING: could not append attestation for ${call_id} (${e.message}) — response still served.`);
+  }
   return sendJson(res, 200, { call_id, status: 'success', output, response_hash: hash, seller_signature: sig, seller_account_id: SELLER_ACCOUNT_ID, price_per_call_yocto: priceYocto });
 });
 

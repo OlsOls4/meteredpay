@@ -1,3 +1,4 @@
 /target
 node_modules/
 seller-api/attestations.jsonl
+seller-api/attestations-summarise.jsonl

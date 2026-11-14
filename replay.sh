@@ -29,7 +29,8 @@
 #   (faucet account creation ~10 s + demo itself ~230 s: 10 contract
 #   calls + one 30 s timeout wait; testnet block times vary, so allow
 #   up to ~6 min). verify-only ~30-60 s for a demo run log (42 s
-#   measured for an 11-tx demo run log).
+#   measured 5 Nov 2026 for an 11-tx demo run log; older logs re-check
+#   via the archival RPC and can take several minutes).
 # First run on a clean machine: 15–45 min including toolchain install
 # (Node 24, near-cli-rs 0.30.1, Rust for the cargo install route) —
 # the 240 s figure above is the replay itself, after the toolchain
@@ -106,12 +107,46 @@ for line in open('$LOG'):
     tx=row.get('tx')
     if tx and tx not in seen: seen.append(tx)
 print('\n'.join(seen))")"
+  # Rows with no tx hash carry no transaction to verify (e.g. the
+  # "final" summary row in an attack log, or a contract-confirmed
+  # row). Count them so the skip is visible, not silent.
+  NO_TX_ROWS="$(python3 -c "
+import json
+n=0
+for line in open('$LOG'):
+    try: row=json.loads(line)
+    except Exception: continue
+    if not row.get('tx'): n+=1
+print(n)")"
   [ -n "$TXS" ] || { echo "No tx hashes in $LOG." >&2; exit 1; }
   echo "$TXS" | wc -l | xargs echo "Transactions to check:"
+  [ "$NO_TX_ROWS" -gt 0 ] && echo "$NO_TX_ROWS log row(s) without a tx hash — skipped, not a demo tx."
   START=$SECONDS
   FAIL=0
+  SKIPPED=0
+  CHECKED=0
+  if [ -z "$BUYER" ]; then
+    # No tx signer is identifiable from the log filename (demo/replay
+    # logs name the buyer; attack logs do not). A tx query needs its
+    # signer, so these txs cannot be verified here — they are NOT
+    # demo transactions and must not be reported as UNKNOWN failures.
+    # Skip them, say so per tx, and pass --buyer <buyer>.testnet to
+    # verify them instead.
+    echo "No tx signer identifiable from the log filename — skipping tx verification (not demo txs)."
+    while IFS= read -r TX; do
+      [ -n "$TX" ] || continue
+      SKIPPED=$((SKIPPED+1))
+      echo "  SKIPPED (not a demo tx)  https://testnet.nearblocks.io/txns/$TX — no signer identifiable; re-run with --buyer <buyer>.testnet to verify"
+    done <<EOF
+$TXS
+EOF
+    echo "Elapsed: $((SECONDS-START))s"
+    echo "VERIFY-ONLY: $SKIPPED tx(s) skipped (not demo txs — no identifiable signer); $NO_TX_ROWS row(s) without a tx hash skipped; final state not checked (no identifiable buyer)."
+    exit 0
+  fi
   while IFS= read -r TX; do
     [ -n "$TX" ] || continue
+    CHECKED=$((CHECKED+1))
     STATUS="$(query_tx_status "$TX" "$BUYER" "$RPC_URL")"
     if [ "$STATUS" = "NOT_OBSERVED" ] || [ "$STATUS" = "RPC-ERROR" ]; then
       # Post-submission council (14 Nov 2026): the default RPC prunes

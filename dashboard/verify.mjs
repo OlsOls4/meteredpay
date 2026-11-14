@@ -69,10 +69,15 @@ function cannedFetch(url, opts) {
   }
   // S5 attestation seed (post-submission cross-check): canned
   // dishonest-001 line — values from DISHONEST_BUYER_DEMO.md §A
-  // (response hash + seller signature verified off-chain there;
-  // timestamp from the run-log filename in that doc).
+  // (response hash + seller signature verified off-chain there).
+  // Timestamp matches the committed seed file exactly:
+  // 2026-11-08T09:17:06.536Z, the time of the
+  // seller-attestation-verified step in the canonical run log
+  // buyer/runs/dishonest-mp-dishonest-wdvw4o.testnet-2026-11-08T09-16-24.jsonl
+  // (truncated to whole seconds in this canned line, as the seed's
+  // own timestamp is the only source — the demo doc lists none).
   if (typeof url === 'string' && url.endsWith('attestations-seed.jsonl')) {
-    const line = JSON.stringify({ call_id: 'dishonest-001', buyer: 'mp-dishonest-wdvw4o.testnet', response_hash: '316b7bb3f0fc8f0fa013848d7edf20301745cb18aa8c02ba9df5b9612eeb42b8', seller_signature: 'F2/CgzUQtm3oBmKliNKVlQ4ydwRO4Iz/RmCM+JdvRUYh2wHPOzgYwjJ7g47mtx6rGHR1lIKgCAYFa3Y/abSsAg==', timestamp: '2026-11-08T09:16:24Z' });
+    const line = JSON.stringify({ call_id: 'dishonest-001', buyer: 'mp-dishonest-wdvw4o.testnet', response_hash: '316b7bb3f0fc8f0fa013848d7edf20301745cb18aa8c02ba9df5b9612eeb42b8', seller_signature: 'F2/CgzUQtm3oBmKliNKVlQ4ydwRO4Iz/RmCM+JdvRUYh2wHPOzgYwjJ7g47mtx6rGHR1lIKgCAYFa3Y/abSsAg==', timestamp: '2026-11-08T09:17:06Z' });
     return Promise.resolve({ text: () => Promise.resolve(line + '\n') });
   }
   // Seller /health check carries no RPC body.

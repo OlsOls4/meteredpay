@@ -83,11 +83,15 @@ echo "Contract (judge-owned): $CONTRACT | Seller (judge-owned): $SELLER | Buyer:
 echo "No builder key, token, or permission is used anywhere in this script."
 
 # --- prerequisite checks ----------------------------------------------------
+# Ordering (post-submission council, 14 Nov 2026): the Rust toolchain
+# (cargo / cargo-near) is needed ONLY to BUILD the wasm. When a wasm
+# file is already present and its SHA-256 matches the frozen wasm,
+# no build happens, so the toolchain must not be demanded — a judge
+# with the frozen wasm and no Rust must proceed past preflight. The
+# cargo checks therefore live in step 1's no-wasm branch, not here.
 command -v node >/dev/null || { echo "Node not found. Install Node 24 (https://nodejs.org, LTS)." >&2; exit 1; }
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 [ "$NODE_MAJOR" -ge 24 ] || { echo "Node 24+ required (found $NODE_MAJOR)." >&2; exit 1; }
-command -v cargo >/dev/null || { echo "Rust (cargo) not found. Install it first (copy-paste):" >&2; echo "  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh" >&2; echo "  source \"\$HOME/.cargo/env\"   # or restart your shell" >&2; echo "  rustup target add wasm32-unknown-unknown" >&2; echo "Then install cargo-near (below) and re-run ./replay-judge-owned.sh." >&2; exit 1; }
-command -v cargo-near >/dev/null || { echo "cargo-near not found. Install it first (copy-paste):" >&2; echo "  cargo install cargo-near" >&2; echo "  rustup target add wasm32-unknown-unknown   # if not already added" >&2; echo "Then re-run ./replay-judge-owned.sh." >&2; exit 1; }
 command -v near >/dev/null || { echo "near-cli not found. Install near-cli-rs 0.30.1 (see replay.sh for the install commands)." >&2; exit 1; }
 command -v python3 >/dev/null || { echo "python3 not found (needed for the code-hash check)." >&2; exit 1; }
 command -v curl >/dev/null || { echo "curl not found." >&2; exit 1; }
@@ -95,7 +99,14 @@ command -v curl >/dev/null || { echo "curl not found." >&2; exit 1; }
 echo "Node: $(node --version) | near-cli: $(near --version 2>&1 | head -n 1)"
 
 # --- step 1: the wasm must be the frozen wasm, byte for byte --------------
-[ -n "$WASM" ] || { echo "No frozen wasm found (looked for target/near/meteredpay.wasm and wasm/meteredpay.wasm)." >&2; echo "Build it first: cargo near build non-reproducible-wasm (never bare 'cargo near build')." >&2; echo "Or place a verified copy of the frozen wasm at wasm/meteredpay.wasm (it is SHA-256-checked before deploy)." >&2; exit 1; }
+# No wasm at all means the judge must BUILD it — only on this path
+# are cargo / cargo-near required, with their install instructions.
+# A present wasm is SHA-256-verified below and needs no toolchain.
+if [ -z "$WASM" ]; then
+  command -v cargo >/dev/null || { echo "Rust (cargo) not found. Install it first (copy-paste):" >&2; echo "  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh" >&2; echo "  source \"\$HOME/.cargo/env\"   # or restart your shell" >&2; echo "  rustup target add wasm32-unknown-unknown" >&2; echo "Then install cargo-near (below) and re-run ./replay-judge-owned.sh." >&2; exit 1; }
+  command -v cargo-near >/dev/null || { echo "cargo-near not found. Install it first (copy-paste):" >&2; echo "  cargo install cargo-near" >&2; echo "  rustup target add wasm32-unknown-unknown   # if not already added" >&2; echo "Then re-run ./replay-judge-owned.sh." >&2; exit 1; }
+  echo "No frozen wasm found (looked for target/near/meteredpay.wasm and wasm/meteredpay.wasm)." >&2; echo "Build it first: cargo near build non-reproducible-wasm (never bare 'cargo near build')." >&2; echo "Or place a verified copy of the frozen wasm at wasm/meteredpay.wasm (it is SHA-256-checked before deploy)." >&2; exit 1;
+fi
 echo "Wasm: $WASM"
 SHA="$(sha256sum "$WASM" | cut -d' ' -f1)"
 echo "Wasm SHA-256: $SHA"
