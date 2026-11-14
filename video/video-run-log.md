@@ -8,12 +8,19 @@ no submission, no mainnet, zero cost. Testnet only.
 
 | File | Size | Duration |
 | --- | --- | --- |
-| `meteredpay-demo-2min.mp4` | 5,086,350 bytes (~4.85 MB) | 120.02 s, 1920×1080, 30 fps, H.264/AAC |
+| `meteredpay-demo-2min.mp4` | 12,995,018 bytes (~12.4 MB) | 87.83 s (1:27), 1920×1080, 30 fps, H.264/AAC |
 | `meteredpay-teaser-30s.mp4` | 948,652 bytes | 30.02 s, 1920×1080, 30 fps, H.264/AAC |
 | `meteredpay-demo-2min.srt` | 1,259 bytes | captions sidecar for the 2:00 |
 | `meteredpay-teaser-30s.srt` | 293 bytes | captions sidecar for the teaser |
 | `meteredpay-demo-2min-transcript.txt` | 1,536 bytes | narration transcript, both cuts |
 | `meteredpay-thumbnail-1200x675.png` | ~190 KB | 1200×675, three-row proof strip, legible at 500 px |
+
+Note (14 Nov 2026): the `meteredpay-demo-2min.mp4` row above is the
+current v3.5 file (13 Nov 2026 rebuild — see "v3.5" at the end of this
+log; size and duration verified on disk: 12,995,018 bytes, 87.83 s).
+The other rows in this table and the tables below are the historical
+pass-1 renders, kept as history — they describe superseded files, not
+the current ones.
 
 ## Governing script
 
@@ -837,3 +844,24 @@ fixed by construction (18.3 MB).
 
 Video is LOCAL ONLY — never uploaded anywhere. NOT pushed by this
 worker (parent owns the push).
+
+## v3.5 — 13 Nov 2026 (rebuild around approved v4 narration audio)
+
+Same recorded run (mp-video05.testnet + tamper mp-tamper05.testnet), no
+new run, no new chain activity. Narration: v4 audio, Paloma (Lilting
+Swing) at natural speed 100, sample-identical — no slowing, no
+time-stretch. The video was rebuilt around the approved audio; the
+audio was approved by Olly 13 Nov 23:19.
+
+Current file (verified on disk 14 Nov 2026 with `ls` + `ffprobe`):
+`meteredpay-demo-2min.mp4` — **12,995,018 bytes, 87.83 s (1:27)**,
+1920×1080, H.264/AAC. The filename keeps "2min" for continuity; the
+video itself is 1:27. The top Deliverables table of this log now
+records this size and duration; the pass-1 / second-pass / Wave-4 /
+chyron-restore / REBUILD / v3 tables above are history of superseded
+renders, not the current file.
+
+Live: YouTube https://youtu.be/1JB0lV-sPRA (public, v3.5, 1:27) and
+the X demo post https://x.com/OlsOls4/status/2121657509085647308
+(live 14 Nov 2026 17:32, v3.5 MP4 attached). Submitted 14 Nov 2026
+~17:34 UTC (HTTP 201). Videos live on the repo (commit 46fce74).

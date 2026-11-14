@@ -171,6 +171,60 @@ contract price always wins when the RPC answers), `RPC_URL`.
 No dependencies; Node >= 18. Keys are read from the credential file
 at runtime and never printed or committed.
 
+## Bring your own service
+
+`server.mjs` is one implementation of this spec, not the spec. To
+serve your own service from it:
+
+**What to replace (the service only):**
+
+- `SERVICE_NAME` and the `SCHEMAS` table (`seller-api/server.mjs`):
+  your service name and your fixed input schemas, each with a
+  `validate(doc)`-style pure function that returns the service result
+  (or a validation error list). The second proven service,
+  `meteredpay-summarise` (`server-summarise.mjs`), is the worked
+  example of a swap: same endpoints, same signing, different service.
+- The `/call` handler's service branch: how the input becomes the
+  `output` object. Keep the output carrying `service`, the schema (or
+  your equivalent), and `input_sha256` (SHA-256 hex of the canonical
+  input) on every success.
+- Your service must stay deterministic and pure — no network calls,
+  same input always gives the same output (decision table, Appendix
+  A3) — and your schemas must be fixed and documented before you go
+  live. Drop the demonstrator-only `scenario` field: a real seller
+  ignores it and returns its real result.
+
+**What never to touch (signing / canonicalisation):**
+
+- The imports from `../shared/canonical.mjs`
+  (`canonicalStringify`, `successBody`, `errorBody`, `responseHash`,
+  `sellerAttestationMessage`, `sellerErrorMessage`) and from
+  `../shared/ed25519.mjs` (`ed25519Sign`, `loadTestnetKey`), the
+  response-hash rule, the attestation message formats, the `/health`
+  shape, and the startup key check (refuse to start if your key
+  differs from the key registered on-chain). Change any of these and
+  the contract rejects your claims on-chain with `Invalid seller
+  signature` and no further diagnosis (see "Common mistakes").
+- Keep the response shapes: success carries `output`,
+  `response_hash`, `seller_signature`, `seller_account_id`,
+  `price_per_call_yocto`; failure carries `error_code`,
+  `error_message`, `response_hash`, `seller_signature` (the error
+  attestation), same account and price fields.
+
+**Smoke test (in this order):**
+
+1. Before you swap the service, prove the untouched signing path
+   matches the spec: `node check-vectors.mjs` (exit 0 only if every
+   check passes — see `SELLER_ONBOARDING.md` Step 0). The vectors
+   are tied to the frozen seller, so run this before going live
+   against your own instance; afterwards they will (correctly) fail
+   for your key.
+2. After the swap, one live call against your own instance
+   (`SELLER_ONBOARDING.md` Step 6): a fresh buyer, one success call,
+   and a deduction to your seller on-chain. A deduction is the live
+   proof your service, hash, and signature all agree; a `curl` to
+   `/call` alone only proves the HTTP layer.
+
 ## Appendix — conformance (added 6 Nov 2026, days 6–7)
 
 ### A1. Registration truth (read first)

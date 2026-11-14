@@ -62,6 +62,8 @@ import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { canonicalStringify, successBody, errorBody, responseHash, sellerAttestationMessage, sellerErrorMessage } from '../shared/canonical.mjs';
 import { ed25519Sign, loadTestnetKey } from '../shared/ed25519.mjs';
+import { appendAttestation } from './attestation-log.mjs';
+import { isBlocked } from './blocklist.mjs';
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT || 8787);
@@ -239,6 +241,13 @@ const server = createServer(async (req, res) => {
   if (typeof call_id !== 'string' || call_id === '' || typeof buyer_account_id !== 'string' || buyer_account_id === '') {
     return sendJson(res, 400, { status: 'failed', error_code: 'BAD_REQUEST', error_message: 'call_id and buyer_account_id are required strings.' });
   }
+  // Blocklist (post-submission council, 14 Nov 2026): checked BEFORE
+  // any chain call or any work in POST /call — a blocked buyer is
+  // refused outright and the server does nothing for them.
+  if (isBlocked(buyer_account_id)) {
+    console.log(`[seller] /call call_id=${call_id} buyer=${buyer_account_id} REFUSED (blocked buyer)`);
+    return sendJson(res, 403, { call_id, status: 'failed', error_code: 'BUYER_BLOCKED', error_message: `Buyer ${buyer_account_id} is blocked by this seller (see seller-api/blocked-buyers.json).` });
+  }
   // Resolve the service input to { schema, document }. The canonical
   // shape is { schema, document }; the bare { text } shape is a legacy
   // alias for the quote schema (days 4-5 callers) and is documented
@@ -298,6 +307,17 @@ const server = createServer(async (req, res) => {
   const canonical = successBody({ callId: call_id, output, sellerAccountId: SELLER_ACCOUNT_ID, priceYocto });
   const hash = responseHash(canonical);
   const sig = ed25519Sign(sellerKey.seedBytes, sellerAttestationMessage(call_id, hash));
+  // Attestation persistence (post-submission council, 14 Nov 2026):
+  // retain the signed success attestation right after signing, so a
+  // later audit can compare it with the on-chain record. Best-effort:
+  // a logging failure must never change the signed response bytes or
+  // fail the call. Never logs the seller's private key (only the five
+  // attestation fields are written).
+  try {
+    appendAttestation({ call_id, buyer: buyer_account_id, response_hash: hash, seller_signature: sig, timestamp: new Date().toISOString() });
+  } catch (e) {
+    console.error(`[seller] WARNING: could not append attestation for ${call_id} (${e.message}) — response still served.`);
+  }
   return sendJson(res, 200, { call_id, status: 'success', output, response_hash: hash, seller_signature: sig, seller_account_id: SELLER_ACCOUNT_ID, price_per_call_yocto: priceYocto });
 });
 

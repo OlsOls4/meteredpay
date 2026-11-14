@@ -17,8 +17,8 @@ security anomaly, 5 Nov 2026).
   (`https://<user>.github.io/<repo>/dashboard/`).
 - Seller API URL is a single config value: `SELLER_URL` in
   `dashboard/config.js` (default `http://127.0.0.1:8787`). Point it at
-  a hosted seller when one exists; the dashboard shows a banner when
-  the seller is unreachable and keeps working from contract reads.
+  a hosted seller when one exists; S4 states the demonstrator seller
+  is stopped, and the page keeps working from contract reads.
 - Contract reads use public testnet RPC with retries and fallback
   (FastNear primary, `rpc.testnet.near.org` fallback).
 
@@ -40,7 +40,11 @@ Or open `index.html` directly from the filesystem — the recorded
 demo run (S1 Journey 0) renders with zero network requests; live
 balances (S2/S4/S5) need network access to the testnet RPC.
 
-Start the demonstrator seller for the live seller-health check:
+The S4 seller-health check was removed post-submission (14 Nov 2026):
+it fetched the demonstrator seller on 127.0.0.1:8787 and failed for
+every judge viewing the hosted dashboard. S4 now states the
+demonstrator seller is stopped and points at the recorded run on S1
+and the replay in README §2.5. To run a seller locally for a replay:
 
 ```bash
 cd ../seller-api && node server.mjs   # http://127.0.0.1:8787
@@ -55,8 +59,7 @@ cd ../seller-api && node server.mjs   # http://127.0.0.1:8787
 4. Wait for the Pages build; open
    `https://olsols4.github.io/meteredpay/dashboard/` and check S1 renders
    the recorded run, S2 loads a buyer balance, S5 shows the replay steps.
-5. If the seller is still localhost-only, S4 shows the seller-unreachable
-   banner — that is expected and honest. A hosted seller is a separate
+5. S4 states the demonstrator seller is stopped — that is expected and honest. A hosted seller is a separate
    decision (see below); the dashboard does not need it to prove the
    contract loop.
 6. Keep the Pages site live through judging (16–18 Nov), ideally to
@@ -65,8 +68,7 @@ cd ../seller-api && node server.mjs   # http://127.0.0.1:8787
 ## Seller API hosting (NOT decided, NOT done)
 
 Today the seller runs on `127.0.0.1:8787` only. A hosted dashboard
-cannot reach it, so S4 shows the unreachable banner until a hosted
-seller exists. Hosting the seller needs a free host and Olly's
+cannot reach it, so S4 states the demonstrator seller is stopped until a hosted seller exists. Hosting the seller needs a free host and Olly's
 Google sign-in for the account — a human decision, not taken here.
 The judge replay does not depend on it: the replay runs locally
 against the same frozen contract (README §2.3, §2.5).

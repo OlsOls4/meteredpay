@@ -8,9 +8,13 @@ calls released (held amount released, never deducted).
 No intent-based settlement is used. Testnet NEAR has no real-world
 value.**
 
+> **Why this matters** — A buyer agent pays only for a call it verified succeeded. A failed call releases its hold: deducted zero. The open problem, stated up front: v1 protects the buyer, not the seller — a buyer can claim failure after a genuine success and the seller's only defence today is detecting it afterwards (see §2.7). Next step that would prove this as a market: a hosted seller and one external buyer completing a full run (see 'What would prove this'). Submitted 14 Nov 2026 to the NEAR Hackathon (agents, open, business, security, defi); demo video v3.5 and X post linked above.
+
+> **Novelty, precisely stated** — x402's auth-capture spec lists metered work priced on completion as a use case and permits an arbiter contract to gate capture, so the metering shape is not new. What is new on NEAR: the payer's verified, signed success receipt is a necessary on-chain condition for every deduction — the veto sits with the payer, in a contract the payer can verify and replay. No shipped x402 flow on NEAR does that.
+
 **Prove it in 60 seconds, install nothing:** `./replay.sh verify-only --log buyer/runs/<run>.jsonl`
 re-checks all 11 transactions of a recorded run against the testnet explorer with curl + python3
-only (42 s measured) — no account, no seller, no install. Full replay: `./replay.sh` (§2.3, §2.6).
+only (42 s measured 5 Nov 2026 on fresh logs; older logs re-check via the archival RPC and can take several minutes — see §2.5b) — no account, no seller, no install. Full replay: `./replay.sh` (§2.3, §2.6).
 
 - Demo dashboard: `dashboard/` (static; open `dashboard/index.html`
   or serve it — see §2.3)
@@ -18,11 +22,14 @@ only (42 s measured) — no account, no seller, no install. Full replay: `./repl
   https://testnet.nearblocks.io/address/apathetic-party.testnet
 - Seller-API spec: `seller-api/SELLER_SPEC.md`
 - Glossary (frozen wording): `GLOSSARY.md`
-- Video / X demo post: video recorded 5 Nov 2026; X demo post drafted,
-  to be published by the human team lead before submission
-  (draft: `X-CAPTION-DRAFT.md`, 256 chars)
+- Demo video v3.5 (1:27, 13 Nov 2026): https://youtu.be/1JB0lV-sPRA
+- X demo post live 14 Nov 2026: https://x.com/OlsOls4/status/2121657509085647308
+- Submitted 14 Nov 2026 ~17:34 UTC (HTTP 201)
 
 ## 2.1 Problem
+
+Numbering note: sections follow the build log — §2 is build phase 2;
+there is no §1 in this file.
 
 Agent services are sold as subscriptions: the buyer pays for time
 whether the call worked or not. A buyer that lets an agent call
@@ -54,11 +61,15 @@ x402's `authorization` flow (the default, preferred) settles only
 after the resource handler succeeds, and `auth-capture` holds funds
 in escrow with capture, void, or refund decided by the captureAuthorizer
 (facilitator or its contract) — the decision sits with the paid side,
-not with the payer. MeteredPay implements the gating no shipped x402
-flow does: the seller cannot mark its own calls successful; only the
-buyer's verified, signed success receipt triggers a deduction. No
-default x402 flow puts the success condition in a contract the payer
-can verify and replay. Agent
+not with the payer. MeteredPay implements the payer-verifiable gating
+on NEAR no shipped x402 flow does: the seller cannot mark its own calls
+successful; only the buyer's verified, signed success receipt triggers
+a deduction. No default x402 flow puts the success condition in a
+contract the payer can verify and replay. Honest limit: the
+auth-capture spec itself contemplates metered capture as a use case,
+and facilitator-level settle-after-2xx exists off-chain (Parallel) —
+neither puts the success condition on-chain as a payer-verifiable
+contract condition. Agent
 Market holds job payments until a human accepts the work — but that
 is a marketplace with disputes and a fee, not a per-call primitive.
 Spend Guard, built in this same hackathon, caps what an agent may
@@ -72,7 +83,7 @@ checked live 13 Nov 2026). MeteredPay is the complementary primitive
 on the other side of the same payment: the deduction happens only on
 the buyer's verified, payer-signed success receipt; a failed call is
 released, never deducted. MeteredPay is the
-missing primitive: a NEAR contract where success itself is the
+missing primitive on NEAR: a NEAR contract where success itself is the
 payment trigger. The buyer prepays, the contract deducts 0.1 testnet
 NEAR only on a buyer-verified, payer-signed success receipt, releases
 the hold on failure or timeout, and refuses over-budget calls
@@ -97,6 +108,9 @@ alone.
   an error list + the SHA-256 of the canonical input), with success
   and fail modes, one fixed price per call (0.1 testnet NEAR). A
   document that fails validation is a failure, never a paid success.
+  "Valid" means schema-valid only: the check proves the document is
+  well-formed against the fixed schema, not that its contents are
+  true (see `seller-api/SELLER_SPEC.md`).
   The `invoice` and `payment-instruction` schemas are now also proven
   end-to-end through the same primitive, same seller, same service —
   second/third job *types*, not a second service — see
@@ -128,15 +142,38 @@ buyer → seller API → success receipt (buyer-verified, payer-signed)
 
 ## 2.3 How to run it locally
 
+Start here — get the repo first (everything below runs from the repo root):
+
+```bash
+git clone https://github.com/OlsOls4/meteredpay && cd meteredpay
+```
+
 ### Prerequisites
 
 - **Node 24** (buyer script + seller API; built with Node 24.22.1).
   Install from https://nodejs.org (LTS) or with nvm:
   `nvm install 24 && nvm use 24`.
 - **near-cli-rs 0.30.1** (testnet account creation + contract calls).
-  Install: `cargo install near-cli-rs --version 0.30.1`
-  (needs Rust; or download the release binary from the near-cli-rs
-  releases page).
+  Either install with Cargo (needs Rust):
+  `cargo install near-cli-rs --version 0.30.1`
+  or download the release binary (no Rust needed) from
+  https://github.com/near/near-cli-rs/releases/tag/v0.30.1 —
+  Linux x86_64 (tarball contents verified 14 Nov 2026: the binary
+  inside is `near`):
+  ```bash
+  curl -L -o near-cli-rs.tar.gz https://github.com/near/near-cli-rs/releases/download/v0.30.1/near-cli-rs-x86_64-unknown-linux-gnu.tar.gz
+  tar xzf near-cli-rs.tar.gz
+  chmod +x near-cli-rs-x86_64-unknown-linux-gnu/near
+  mkdir -p ~/.local/bin && mv near-cli-rs-x86_64-unknown-linux-gnu/near ~/.local/bin/
+  export PATH="$HOME/.local/bin:$PATH"   # add to ~/.bashrc to keep it
+  near --version   # expect 0.30.1
+  ```
+  macOS: same release page — download the macOS binary, `chmod +x`
+  it, move it to a directory on your `PATH` (`~/.local/bin` as
+  above, or `/usr/local/bin`), then `near --version`.
+  Windows: use WSL (Ubuntu) and follow the Linux steps inside WSL —
+  the buyer script and seller API are built and tested on
+  Linux/macOS/WSL, not native Windows.
 - **A testnet account funded from the faucet.** Create one free with
   the faucet-sponsored flow (testnet only):
   ```bash
@@ -149,27 +186,59 @@ buyer → seller API → success receipt (buyer-verified, payer-signed)
   so this form also works headless — the shorter form without
   `network-config testnet` and `create` prompts instead and fails on
   non-TTY stdin ("The input device is not a TTY"). If it still prompts
-  in a terminal, just press Enter at each prompt (defaults are correct). Alternative: create an account at
-  https://testnet.mynearwallet.com and fund it from
-  https://near-faucet.io.
+  in a terminal, just press Enter at each prompt (defaults are correct).
+  Pick a fresh buyer name in the form `mp-<name>-<random>.testnet`
+  (e.g. `mp-olly-7f3k2.testnet`) — the random suffix is what keeps it
+  unique. If the name is already taken, account creation fails and no
+  key file is written: pick a different random suffix and retry. If
+  the faucet rate-limits you, wait a few minutes and retry, or use the
+  web fallback. Web fallback: create the account at
+  https://testnet.mynearwallet.com, fund it from
+  https://near-faucet.io (paste the account id, request testnet NEAR),
+  then get the account's key into
+  `~/.near-credentials/testnet/<buyer>.json` (export it from
+  MyNearWallet) so the buyer script can read it.
 - Your wallet needs faucet testnet NEAR **beyond the 0.5 deposit**:
   every contract call costs testnet gas (100 Tgas per call, roughly
   0.001–0.01 testnet NEAR per call). The faucet-sponsored flow funds
   a new account with **10 testnet NEAR** (verified: a learning
-  account created the same way held ~9.999 after a deploy; see
-  prep/08). The demo's total gas budget is the 0.5 deposit plus gas
+  account created the same way held ~9.999 after a deploy). The demo's total gas budget is the 0.5 deposit plus gas
   for ~11 contract calls (deposit, cap, 3 requests, 2 deductions,
   2 releases, 1 refusal) — roughly 0.01–0.11 testnet NEAR of gas, so
   ~0.51–0.61 total against the 10 NEAR grant: you will not run out
   of testnet NEAR. Testnet NEAR has no real-world value.
+- Unspent deposit cannot be withdrawn in v1 — only deposit what you
+  plan to spend; cap 0.2 of a 0.5 deposit leaves 0.3 locked (see §2.7).
 - No charged key, account, or service is needed. Zero cost.
 
+First-run time budget (15–45 min all-in on a clean machine):
+clone ~1 min; Node 24 install ~5–10 min (estimate); near-cli install
+~2 min via the release binary, ~5–15 min via Cargo (Rust build,
+estimate); faucet account creation ~10 s (measured); demo run ~4 min
+(240 s measured); verify-only re-check 42 s (measured). The 240 s
+figure is the replay itself, not the all-in first-run time.
+
 ### Commands
+
+Two replay paths — pick by who you are:
+
+- **Frozen-contract replay (`./replay.sh`) — needs the builder's
+  seller key, will not start on your machine.** It starts the
+  demonstrator seller from the repo, which signs with the builder's
+  seller key (`tedious-sea.testnet`); that key is not in the repo, and
+  the seller refuses to start without the registered key (see
+  `seller-api/SELLER_SPEC.md` startup rule). Use this path only if
+  you have the builder's seller key.
+- **Judge-owned replay (`./replay-judge-owned.sh`) — the default for
+  strangers.** Deploys the same verified wasm to your own testnet
+  account, inits it with your own seller key, and runs the buyer
+  end-to-end — no builder key needed at all (see §2.6).
 
 **One-command replay (fastest path — start here):**
 
 ```bash
-./replay.sh
+./replay.sh                 # frozen-contract replay (needs the builder's seller key)
+./replay-judge-owned.sh     # judge-owned replay (default for strangers — no builder key)
 # Checks Node 24 + near-cli, creates a fresh faucet-funded testnet
 # buyer, starts the demonstrator seller if needed, runs the full
 # demo (Steps 1–6) and asserts the frozen final state 0.5 / 0 / 0.2
@@ -179,9 +248,17 @@ buyer → seller API → success receipt (buyer-verified, payer-signed)
 ./replay.sh verify-only --log buyer/runs/<run>.jsonl
 ```
 
-Manual run (same steps, step by step):
-git clone https://github.com/OlsOls4/meteredpay && cd meteredpay
+Manual run (same steps, step by step — you are already in the repo
+root from the clone above):
 cd seller-api && node server.mjs              # demonstrator seller on http://127.0.0.1:8787
+# Keep it running in the background instead (from seller-api/; the
+# seller must stay up while the buyer runs):
+#   nohup node server.mjs > seller.log 2>&1 &
+# Port 8787 already in use (EADDRINUSE)? Another seller is running —
+# either stop it, or start this one on another port and point the
+# buyer at it:
+#   PORT=8788 node server.mjs
+#   node buyer.mjs --buyer <buyer>.testnet --mode demo --tag demo --api http://127.0.0.1:8788
 # Expected first output: "[seller] contract apathetic-party.testnet confirmed: seller=tedious-sea.testnet price=100000000000000000000000 yoctoNEAR timeout=600s"
 # (in a second terminal)
 cd buyer && npm install                       # near-api-js 7.4.0 (already in buyer/node_modules if cloned with it)
@@ -207,6 +284,9 @@ commands above. The dashboard also works from static files alone.
 
 ### Troubleshooting
 
+- `permission denied` on `./replay.sh` after a fresh clone: run
+  `bash replay.sh` instead — the exec bit is lost in the repo's push
+  path. Do not try to fix the mode itself (it will not stick).
 - Seller not running: start the seller first (`cd seller-api &&
   node server.mjs`) — the buyer fails fast if `http://127.0.0.1:8787`
   is down; check it answers with `curl http://127.0.0.1:8787/health`.
@@ -246,7 +326,22 @@ transactions, shown separately on the explorer.
 (`BUYER_WAIT_MS`); if none arrives it submits a timeout claim at
 once. The 600 s backstop (`call_timeout_seconds`) is the contract
 deadline after which anyone may call `expire_call` to release a hold
-the buyer never claimed. A call can never be held forever.
+the buyer never claimed. A call can never be held forever. Timeout
+claims are buyer-asserted: `submit_failure` enforces no waiting
+period — a buyer may claim timeout immediately — and only
+`expire_call` enforces the 600 s deadline on-chain
+(`src/lib.rs`: `submit_failure`, `expire_call`).
+
+**Cap edges (read before lowering a cap):** a buyer with a hold can
+lower the cap to spent — `set_budget_cap` only requires cap ≥ spent
+— after which new calls refuse `over_budget` despite available > 0,
+because `request_call` checks spent + held + price against the cap
+(`src/lib.rs`: `set_budget_cap`, `request_call`).
+
+**A wrong-seller request burns the call_id:** `request_call` records
+the refusal on-chain, so a retry with the corrected seller and the
+same call_id is refused as `duplicate_call_id` — use a fresh call_id
+(`src/lib.rs`: `record_refusal`).
 
 ## 2.5 Do-X-see-Y steps (the core of the README)
 
@@ -291,6 +386,8 @@ contradiction.
 **Step 1 — Deposit.**
 - Do: `node buyer/buyer.mjs --buyer <buyer>.testnet --mode demo --tag demo`
   (the script deposits 0.5 and sets cap 0.2 first).
+- Unspent deposit cannot be withdrawn in v1 — only deposit what you
+  plan to spend; cap 0.2 of a 0.5 deposit leaves 0.3 locked.
 - Or deposit and set the cap yourself with near-cli (copy-pasteable,
   testnet only — verified with a real manual run, days 8–9):
   ```bash
@@ -454,6 +551,10 @@ judge replay: same contract, same steps, same final state. Final
 balances verified on-chain via `get_buyer_balance`: deposit 0.5 /
 held 0 / spent 0.2 / available 0.3 / cap 0.2. Seller earned 4.6
 testnet NEAR (cumulative across all buyers, re-read live 13 Nov 2026 — grows 0.2 per replay), withdrawn 0.2.
+Known limitation: `withdraw()` zeroes earned before the transfer,
+with no callback — the contract does not re-check that the transfer
+landed (`src/lib.rs`: `withdraw`). The live withdraw on instance B
+succeeded, so this is untriggered, not observed.
 
 **Replay wall-clock (measured 5 Nov 2026).** Full replay
 (`./replay.sh`) measured **240 s (~4 min)** once Node + near-cli
@@ -477,9 +578,12 @@ deposit 0.5 / held 0 / spent 0.2 / available 0.3 / cap 0.2.
 All 11 txs re-checked with `./replay.sh verify-only`: 11/11 OK
 (48 s). Run log:
 `buyer/runs/demo-mp-replay-dll6s7.testnet-2026-11-05T23-32-03.jsonl`.
-(Note: run on the build VM with the toolchain already installed, so
-240 s is the replay itself — a first clean-machine replay is
-15–45 min including toolchain install, as above.)
+(Note: run on the build VM with the toolchain AND the seller key
+already present — the frozen-contract replay needs the builder's
+demonstrator seller key (see §2.6); the key-free path is
+`replay-judge-owned.sh`. 240 s is the replay itself — a first
+clean-machine replay is 15–45 min including toolchain install, as
+above.)
 
 | Step | Tx |
 |---|---|
@@ -503,19 +607,36 @@ steps, same final state, a fresh buyer.
 
 - The frozen contract is `apathetic-party.testnet` and stays live on
   testnet. The same text is on dashboard S5.
-- A judge needs only: a testnet account (faucet-funded, §2.3), this
-  repo, and Steps 1–6 above — plus the demonstrator seller API, which
-  signs with the builder's seller key; `replay.sh` starts it from the
-  repo when the seller key is present. No builder key is needed at all
-  for the judge-owned replay: `./replay-judge-owned.sh` deploys the same
-  frozen wasm (SHA-256 verified, code hash verified) to the judge's own
-  testnet account, inits it with the judge's own seller key, and runs
-  the buyer end-to-end — proved 13 Nov 2026 on `mp-judge-w6.testnet`
+- Two replay paths (see §2.3). The frozen-contract replay
+  (`./replay.sh`) needs the builder's demonstrator seller key
+  (`tedious-sea.testnet`), which is not shared: the demonstrator
+  seller API signs with that key, and `replay.sh` starts it from the
+  repo only when the seller key is present. The key-free replay is
+  `./replay-judge-owned.sh`: it deploys the same frozen wasm
+  (SHA-256 verified, code hash verified) to the judge's own testnet
+  account, inits it with the judge's own seller key, and runs the
+  buyer end-to-end — no builder key is needed at all for the
+  judge-owned replay — proved 13 Nov 2026 on `mp-judge-w6.testnet`
   (deploy tx `HBWdw57zuk5mPe6TPLZ4rZTwGc8AkDDHiWNBF3gGw8Ui`, final state
   0.5 / 0 / 0.2 / 0.3 / 0.2) and again on `mp-judge-rvdqpm.testnet`
   (deploy tx `CsHq3vTYVN3K93knR524A2SkB7qUbQw6vV7wBPR1DzNZ`, same final
-  state). The dashboard is read-only; the buyer
+  state). It reproduces the same final state on a new contract, not
+  the frozen one. The dashboard is read-only; the buyer
   script runs locally with the judge's own key.
+- The 60-second key-free check is verify-only:
+  `./replay.sh verify-only --log buyer/runs/<run>.jsonl` re-checks a
+  recorded run's 11 transactions against the explorer with curl +
+  python3 only — no account, no seller, no new transaction.
+- Frozen provenance in one command: `./verify-frozen.sh` checks the
+  local wasm SHA-256 and the live on-chain code hash of
+  `apathetic-party.testnet` against the frozen build (both must PASS).
+- Recovery after a seller outage — release expired paid holds:
+  `node buyer/expire-held.mjs --buyer <buyer>.testnet` lists a buyer's
+  paid calls past the 600 s timeout (dry-run by default, no
+  transaction); re-run with `--execute` to call `expire_call` per
+  expired hold and assert timeout-refunded. Live execution is UNPROVEN
+  (no live run was performed) — do not rely on `--execute` until a proof
+  run on a fresh buyer is recorded.
 - Fresh-buyer path: run the buyer script with a fresh testnet account
   and repeat Steps 2–6. The contract state is per-buyer, so one
   judge's replay does not disturb another's.
@@ -524,7 +645,9 @@ steps, same final state, a fresh buyer.
 - What a successful replay proves: the same contract, not a fresh
   redeploy, still enforces the bundle — deduction only on a
   buyer-verified, payer-signed success receipt, releases on
-  failure/timeout, and on-chain refusals.
+  failure/timeout, and on-chain refusals. (Frozen-contract replay;
+  the judge-owned replay proves the same wasm enforces the bundle
+  on a fresh deploy.)
 - Keep the demo live through judging (16–18 Nov).
 
 ## 2.7 "What is NOT claimed" honesty box
@@ -558,11 +681,12 @@ steps, same final state, a fresh buyer.
 - Buyer dishonesty is NOT solved: a buyer could claim failure after a
   genuine success. The design protects the buyer from paying for
   failure; it does not protect the seller from a dishonest buyer. The
-  dashboard S5 dispute-audit view detects disagreement between the
-  seller attestation and the buyer claim; it does not prevent it.
+  dashboard S5 dispute-audit view shows the on-chain claim vs outcome
+  per call; spotting a disagreement needs the seller's attestation log
+  alongside it. It does not prevent dishonesty.
   Demonstrated deliberately on 8 Nov 2026 — see
   `DISHONEST_BUYER_DEMO.md` and §2.5b.
-- The budget cap is enforced at request_call only; submit_success does not re-check it, and the buyer key-holder can raise the cap up to the deposit, so the cap bounds a looping or buggy buyer agent, not a compromised buyer key.
+- The budget cap is enforced at request_call only; submit_success does not re-check it, and the buyer key-holder can raise the cap up to the deposit, so the cap bounds a looping or buggy buyer agent, not a compromised buyer key. The cap can also be lowered below spent+held — set_budget_cap only requires cap ≥ spent (src/lib.rs set_budget_cap) — after which new calls refuse over_budget despite available > 0 (see §2.4). A first deposit defaults the cap to the full deposit (src/lib.rs deposit), so set the cap explicitly if you want a lower bound.
 - Unspent deposit: no buyer withdraw exists in v1 — unspent funds remain locked to the buyer account; withdraw is seller-only.
 - The prize payout address on the submission form is a
   production-network NEAR account supplied by the human team lead.
@@ -621,8 +745,8 @@ is agents, open, business, security, defi — agents first, defi last.
 - `open` — "Have an idea that refuses to fit a category? Explore new
   ways for money, intelligence and ownership to work together."
   MeteredPay: success-only
-  metering as a new way for agent services to charge — a
-  single-seller metering primitive: the buyer prepays, the contract
+  metering on NEAR as a new way for agent services to charge — a
+  single-seller metering primitive on NEAR: the buyer prepays, the contract
   deducts only on a buyer-verified success receipt, releases the hold
   on failure, and refuses over-budget calls on-chain. The multi-seller
   successor is proven, not just specified: the same wasm deployed as
@@ -656,16 +780,28 @@ hackathon cap what an agent may spend. MeteredPay differs by
 mechanism, not by having a cap: it gates payment on the OUTCOME of
 the call, not on the ATTEMPT. A capped attempt still pays for a
 failure; a MeteredPay call pays only when the buyer verifies a signed
-success receipt.
+success receipt. The attempt-gating field is five live implementations
+deep in this hackathon — Spend Guard, AgentGuard, Leash, Drip, Ark.
+A cap is table stakes; the outcome gate is the differentiator.
 
 - NEAR Agent Spend Guard (same hackathon): attempt-gating — a Rust
   contract holding native NEAR with receiver allowlists, per-tx/daily
   caps, approval thresholds, pause, and a function-call key scoped to
   `spend`. Its `spend` transfers on attempt, with no success
-  verification, no receipt, and no refund-on-failure. MeteredPay has
+  verification, no receipt, and no refund-on-failure. Fairness note:
+  amounts above its approval threshold wait for owner approval — a
+  human gate, not an outcome check. MeteredPay has
   no function-call keys and no prompt-injection demo; what it has
   instead is the layer Spend Guard lacks: deduction only on a
   buyer-verified success receipt, with the hold released on failure.
+- AgentGuard (same hackathon): attempt-gating — a spending firewall
+  (vault factory with no full-access key, one-way rule locking, a
+  shared scam registry, a hosted console, and an MCP server on npm);
+  its vault decides paid/held/blocked on policy (caps, allowlist,
+  registry), so a call that passes policy is paid whether or not the
+  work succeeded (agentguard.app, checked live 13 Nov 2026).
+  Fairness note: its held state is a hold for human approval on
+  policy grounds, not an outcome check.
 - Veto-cluster (Veto, Semilla1 Guard, Allowance, LeashPay — names
   from the organiser build log): named only; their mechanisms are
   unverified here, so no mechanism claim is made about them.
@@ -679,6 +815,13 @@ success receipt.
 - Agent Market: job escrow — payment held until a human accepts the
   work, a marketplace with disputes and a fee, not a per-call
   primitive.
+- Genesis (same hackathon, checked 14 Nov 2026): also pays on outcome
+  — its job escrow pays only if a verifier passes and the score beats
+  an on-chain frontier. Difference: Genesis's pay_job is owner-only —
+  its own README says the service holding the treasury key decides who
+  gets paid. MeteredPay's success decision is enforced by the contract
+  on the buyer's verified, payer-signed receipt, replayable on-chain;
+  per API call, not per job.
 
 No rival above is claimed to do anything unverified; where a mechanism
 could not be verified (Veto-cluster), that is stated, not assumed.
@@ -695,10 +838,15 @@ contract with dispute logic) — but no default/shipped x402 flow gates
 capture on the payer's verified success receipt, and the client's
 reclaim exists only after the capture deadline (x402-foundation
 `auth-capture` spec, `scheme_auth_capture.md`, re-checked 13 Nov 2026).
-MeteredPay implements the gating no shipped x402 flow does: the seller
+MeteredPay implements the payer-verifiable gating on NEAR no shipped
+x402 flow does: the seller
 cannot mark its own calls successful; only the buyer's verified, signed
 success receipt triggers a deduction. No default x402 flow puts the
-success condition in a contract the payer can verify and replay. MeteredPay's
+success condition in a contract the payer can verify and replay.
+Honest limit: the auth-capture spec itself contemplates metered
+capture as a use case, and facilitator-level settle-after-2xx exists
+off-chain (Parallel) — neither puts the success condition on-chain as
+a payer-verifiable contract condition. MeteredPay's
 claim is the bundle, not the single word "success-conditional":
 buyer-verified hash, payer-signed receipt, on-chain cap refusal,
 buyer-claimed release, a 600 s backstop, and a dispute-audit view.
@@ -755,3 +903,94 @@ hash with explorer links) in `MULTI_SELLER_APPENDIX.md`:
   remains the judge-replay target (§2.5, §2.6). No buyer deposit is
   shared across sellers — that needs a code change (runbook Path B),
   not done.
+
+## 2.12 First real service: a pricing sketch (illustrative only)
+
+Take the summariser — the second proven service
+(`meteredpay-summarise`, `SECOND_SERVICE_APPENDIX.md`) — and price
+it as if it were a real service. Every number below is an
+illustrative assumption, labelled as such; there are no real users,
+no real prices, and no usage data. The demo price is 0.05 testnet
+NEAR per summariser call, and testnet NEAR has no monetary value.
+
+Assumptions: the summariser costs **£0.02 per successful call** (a
+plausible real per-call cost for a deterministic extractive summary);
+one buyer makes **1,000 calls a day**; the failure rate is **f**
+(the share of calls that fail or time out).
+
+- Success-only metering (MeteredPay): 1,000 × 365 × £0.02 × (1 − f)
+  = **£7,300 × (1 − f) per year**.
+- Attempt-gated payment (pay per attempt, same £0.02): **£7,300 per
+  year**, whatever f is. Success-only beats it whenever f > 0: at
+  f = 10% it saves £730 a year — the same £365-style math as §2.1,
+  doubled because the price here is £0.02 not £0.01 (1,000 calls a
+  day, 1 in 10 failing, £0.01 a call = £365 a year for work that
+  never happened).
+- Subscription: **£400 a month = £4,800 a year**, flat. Success-only
+  beats it only when £7,300 × (1 − f) < £4,800, i.e. **f > ~34%**.
+
+The honest read: success-only metering always beats attempt-gated
+payment, and beats a subscription only when failures are frequent
+(above ~34% at these prices). Below that, the subscription is
+cheaper — success-only wins on waste, not always on price. The
+sketch is a reason to test the market (§2.13), not a revenue claim.
+
+## 2.13 What would prove this (market test — not done)
+
+A hosted seller and one external buyer completing a full run. Steps:
+
+1. Host the demonstrator seller: the Render blueprint and keep-alive
+   are already in the repo (`seller-api/RENDER_HOSTING.md`,
+   `seller-api/RENDER_PROOF_LOG.md`). Human gate, stated honestly:
+   Render sign-up needs the entrant's Google sign-in; an agent
+   cannot do it.
+2. Invite external buyers to run the demo against the hosted seller
+   (same Steps 1–6, §2.5), with their own faucet-funded testnet
+   accounts.
+3. Acceptance — both must happen: **one external buyer completes a
+   full demo run** (final state 0.5 / 0 / 0.2 / 0.3 / 0.2 on the
+   frozen contract), and **one external seller is paid** — which, on
+   the frozen contract's single-seller limit, means that seller's own
+   contract instance (see `SELLER_ONBOARDING.md`), with a real
+   deduction to its account.
+4. Record the run the same way the repo records its own: run log,
+   tx hashes, final balances. A run with no log is not evidence.
+
+Until that happens, MeteredPay is a proven mechanism with no market
+evidence — no users, no pilots, no adoption are claimed anywhere in
+this repo.
+
+## 2.14 v2 design notes (DESIGN, NOT IMPLEMENTED)
+
+None of this is shipped. The frozen contract (`src/lib.rs`) is
+untouched; each note names the exact contract change v2 would need.
+
+- **Seller protection (challenge window).** Sketch: a failure claim
+  submitted with no seller evidence does not release the hold at
+  once — it enters a pending/challenge window. During the window the
+  seller may present its retained signed success attestation for the
+  same call; a valid attestation flips the call to a deduction,
+  otherwise the hold releases when the window closes. Contract
+  change required: a new pending call status; a
+  `challenge_failure(call_id, response_hash, seller_signature)`
+  method that verifies the seller attestation on-chain against the
+  registered seller key; a challenge-window duration stored at init;
+  and a state transition that deducts the held amount (held → spent,
+  seller earned += price) on a valid challenge instead of releasing
+  it. This closes the §2.7 dishonest-buyer hole for the case where
+  the seller kept its attestation; it does not help a seller that
+  kept nothing.
+- **Buyer withdraw.** Contract change required: a `withdraw_buyer()`
+  method, callable only by the buyer, that pays the buyer
+  `deposit − spent − held` (the available balance) and reduces the
+  deposit by the same amount; it must refuse (or pay only the
+  available part) while holds are open, so an in-flight call can
+  never be withdrawn out from under. v1 has no such method —
+  unspent deposit is locked (see §2.7).
+- **Cap re-check at submit_success.** Contract change required: in
+  `submit_success`, require `spent + price ≤ budget_cap` before
+  deducting — re-check the cap at deduction time, not only at
+  `request_call` (`src/lib.rs`: `submit_success` currently deducts
+  without re-checking; `set_budget_cap` can lower the cap below
+  spent + held, see §2.4). A success claim that would breach the cap
+  would be rejected with balances unchanged.

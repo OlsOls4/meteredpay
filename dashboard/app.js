@@ -236,7 +236,26 @@
   // Returns { ok, data, endpoint, error, at }.
   // ------------------------------------------------------------------
   var lastRpc = { ok: null, endpoint: null, at: null, error: null };
+  // Post-submission: visible RPC attempt counter so a stuck load is
+  // diagnosable. rpcViewFor tries each endpoint twice
+  // (RPC_URLS.length * 2 attempts in total); each attempt bumps the
+  // counter and refreshes any visible ".rpc-attempt" label on the
+  // page. The counter is a diagnostic aid, not an exact per-view
+  // count — concurrent views share it.
+  var RPC_ATTEMPT_TOTAL = (C.RPC_URLS ? C.RPC_URLS.length : 1) * 2;
+  var rpcAttempt = 0;
+  function refreshAttemptLabels() {
+    if (typeof document.querySelectorAll !== 'function') return;
+    document.querySelectorAll('.rpc-attempt').forEach(function (el) {
+      el.textContent = 'trying testnet RPC, attempt ' + Math.max(rpcAttempt, 1) + ' of ' + RPC_ATTEMPT_TOTAL;
+    });
+  }
+  function attemptLabelHtml() {
+    return '<span class="rpc-attempt">trying testnet RPC, attempt 1 of ' + RPC_ATTEMPT_TOTAL + '</span>';
+  }
   function rpcCall(method, args, endpoint, contractId) {
+    rpcAttempt += 1;
+    refreshAttemptLabels();
     var body = JSON.stringify({
       jsonrpc: '2.0', id: 'meteredpay-dash', method: 'query',
       params: {
@@ -254,6 +273,7 @@
     });
   }
   function rpcViewFor(method, args, contractId) {
+    rpcAttempt = 0;
     var endpoints = C.RPC_URLS.slice();
     var chain = Promise.reject(new Error('no endpoint tried'));
     endpoints.forEach(function (ep) {
@@ -358,7 +378,7 @@
 
   // ------------------------------------------------------------------
   // H1 — Journey 0 guided proof (S1). One primary button steps through
-  // four beats (success → fail → success → refusal; timeout optional 5th), one
+  // five beats (success → fail → timeout → success → refusal), one
   // card at a time: result word + amount + balance-after + explorer
   // link + "Receipt" link, Next/Back, "N of 4" progress, ending at S5.
   // Beats are the canonical freeze1011 run (frozen-run.json): the
@@ -368,17 +388,14 @@
   // timers, no contract change. Keyboard-operable: real buttons, focus
   // moves to the card heading on each step.
   // ------------------------------------------------------------------
-  var GUIDED_IDS = ['freeze1011-success-001', 'freeze1011-fail-001', 'freeze1011-success-002', 'freeze1011-overbudget-001'];
+  var GUIDED_IDS = ['freeze1011-success-001', 'freeze1011-fail-001', 'freeze1011-timeout-001', 'freeze1011-success-002', 'freeze1011-overbudget-001'];
   var guidedIdx = -1; // -1 = not started
-  var guidedTimeoutOn = false;
   function guidedIds() {
-    var ids = GUIDED_IDS.slice();
-    if (guidedTimeoutOn) ids.push('freeze1011-timeout-001');
-    return ids;
+    return GUIDED_IDS.slice();
   }
   function guidedState() {
     var ids = guidedIds();
-    return { started: guidedIdx >= 0, index: guidedIdx, total: ids.length, id: guidedIdx >= 0 ? ids[guidedIdx] : null, timeoutOn: guidedTimeoutOn };
+    return { started: guidedIdx >= 0, index: guidedIdx, total: ids.length, id: guidedIdx >= 0 ? ids[guidedIdx] : null };
   }
   function guidedCardHtml(r, step, total, nextLabel) {
     var badge = r.kind === 'success' ? 'ok' : (r.kind === 'refusal' ? 'neutral' : 'amber');
@@ -389,8 +406,6 @@
     var nextBtn = step < total
       ? '<button type="button" id="guided-next">Next: see the ' + esc(nextLabel) + ' call</button>'
       : '<a class="button-link" href="#/s5">Finish — replay it yourself on S5</a>';
-    var timeoutBtn = (!guidedTimeoutOn && step === total)
-      ? ' <button type="button" id="guided-timeout" class="secondary">Show the optional timeout beat too</button>' : '';
     return '<div class="card" role="group" aria-labelledby="guided-heading">' +
       '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + step + '" aria-label="Guided proof progress"><div style="width:' + Math.round(step / total * 100) + '%"></div></div>' +
       '<p class="small"><strong>' + step + ' of ' + total + '</strong></p>' +
@@ -401,7 +416,7 @@
       '<h5>Balance after this call</h5>' + fiveStaticHtml(r.balAfter) +
       '<p>' + esc(r.note) + '</p>' +
       '<p><a href="#/s3?call=' + esc(r.id) + '">Receipt</a> · <a href="#/s1">Back to the full recorded run</a></p>' +
-      '<p><button type="button" id="guided-back" class="secondary"' + backDisabled + '>Back</button> ' + nextBtn + timeoutBtn + '</p>' +
+      '<p><button type="button" id="guided-back" class="secondary"' + backDisabled + '>Back</button> ' + nextBtn + '</p>' +
       '</div>';
   }
   function renderGuided() {
@@ -422,17 +437,13 @@
     if (next) next.addEventListener('click', function () { guidedIdx += 1; renderGuided(); });
     var back = $('guided-back');
     if (back) back.addEventListener('click', function () { if (guidedIdx > 0) { guidedIdx -= 1; renderGuided(); } });
-    var to = $('guided-timeout');
-    if (to) to.addEventListener('click', function () { guidedTimeoutOn = true; guidedIdx = guidedIds().length - 1; renderGuided(); });
   }
-  // Restarting the guided proof always starts from the four-beat
-  // sequence (success → fail → success → refusal); the optional timeout beat
-  // is off until the reader asks for it again, so the "N of 4"
-  // progress copy always matches the beat count.
-  function guidedStart() { guidedTimeoutOn = false; guidedIdx = 0; renderGuided(); }
+  // The guided proof is the canonical five-beat sequence (success →
+  // fail → timeout → success → refusal); restarting always starts
+  // from beat 1, so the "N of 5" progress copy matches the beat count.
+  function guidedStart() { guidedIdx = 0; renderGuided(); }
   function guidedNext() { var ids = guidedIds(); if (guidedIdx >= 0 && guidedIdx < ids.length - 1) { guidedIdx += 1; renderGuided(); } }
   function guidedBack() { if (guidedIdx > 0) { guidedIdx -= 1; renderGuided(); } }
-  function guidedShowTimeout() { guidedTimeoutOn = true; guidedIdx = guidedIds().length - 1; renderGuided(); }
 
   // S2 — Buyer console (read-only live reads).
   // M5: partial failure — each of the three reads renders (or fails)
@@ -449,7 +460,7 @@
     }
     var loadBtn = $('buyer-load');
     if (loadBtn) loadBtn.disabled = true;
-    $('buyer-result').innerHTML = hint + '<p aria-live="polite">Loading contract state…</p>';
+    $('buyer-result').innerHTML = hint + '<p aria-live="polite">Loading contract state… (' + attemptLabelHtml() + ')</p>';
     Promise.allSettled([
       rpcView('get_buyer_balance', { account_id: acct }),
       rpcView('list_calls', { buyer_account_id: acct, from_index: '0', limit: '50' }),
@@ -639,7 +650,7 @@
   function loadSeller() {
     var el = $('seller-result');
     var buyerAcct = ($('seller-buyer') && $('seller-buyer').value || '').trim() || C.DEMO_BUYER;
-    el.innerHTML = '<p aria-live="polite">Loading seller state…</p>';
+    el.innerHTML = '<p aria-live="polite">Loading seller state… (' + attemptLabelHtml() + ')</p>';
     Promise.allSettled([rpcView('get_seller', {}), rpcView('get_seller_balance', {}), rpcView('list_calls', { buyer_account_id: buyerAcct, from_index: '0', limit: '50' })])
       .then(function (res) {
         var sOk = res[0].status === 'fulfilled', balOk = res[1].status === 'fulfilled', callsOk = res[2].status === 'fulfilled';
@@ -690,20 +701,39 @@
         else announce('Some seller data could not be loaded.');
       })
       .catch(function () { el.innerHTML = rpcStatusHtml(); });
-    // F2: no auto-probe. The health check runs only when the judge
-    // presses "Check seller on this machine" (wired in init).
+    // Post-submission: no health check. The demonstrator seller
+    // stopped after the recorded runs, and a fetch to 127.0.0.1:8787
+    // failed for every judge viewing the hosted dashboard — so the
+    // S4 button was removed and replaced with a static line (index.html).
+    // Nothing here probes the seller API.
   }
-  function checkSellerHealth() {
-    var el = $('seller-health');
-    fetch(C.SELLER_URL + '/health', { signal: AbortSignal.timeout(8000) })
-      .then(function (r) { return r.json(); })
-      .then(function (j) {
-        el.innerHTML = '<p class="small">Seller API reachable at <span class="mono">' + esc(C.SELLER_URL) + '</span>: status ' + esc(j.status || '?') + ', seller ' + esc(j.seller_account_id || '?') + ', price ' + esc(j.price_per_call_yocto || '?') + ' yoctoNEAR, mode ' + esc(j.mode || '?') + '.</p>';
-      })
-      .catch(function () {
-        el.innerHTML = '<div class="banner"><strong>Seller API unreachable at <span class="mono">' + esc(C.SELLER_URL) + '</span>.</strong> ' +
-          'The demonstrator seller is not running at the configured URL. The contract state above is still live; start the seller locally (<code>node seller-api/server.mjs</code>) or set <code>SELLER_URL</code> in <code>dashboard/config.js</code>.</div>';
+  // Post-submission (S5 cross-check): seller attestations retained
+  // off-chain, one JSON object per line in
+  // seller-api/attestations-seed.jsonl (the whole repo is published
+  // to Pages, so the relative path resolves). A failed-refunded or
+  // timeout-refunded call whose call_id appears in the seed log with
+  // a success attestation (response_hash present) is a MISMATCH:
+  // the seller attested success, the buyer claimed failure. Clean
+  // failures show no mismatch. The file may not exist yet — a missing
+  // file disables the cross-check only; the audit table still renders.
+  function loadAttestationSeed() {
+    return fetch('../seller-api/attestations-seed.jsonl').then(function (r) { return r.text(); }).then(function (t) {
+      var map = {};
+      String(t).split('\n').forEach(function (line) {
+        line = line.trim();
+        if (!line) return;
+        try {
+          var o = JSON.parse(line);
+          if (o && o.call_id && o.response_hash) map[o.call_id] = o;
+        } catch (e) { /* ignore a bad seed line */ }
       });
+      return map;
+    }).catch(function () { return {}; });
+  }
+  function mismatchRowHtml(c, seed) {
+    var a = seed && seed[c.call_id];
+    if (!a) return '';
+    return '<tr class="mismatch"><td colspan="6"><strong>MISMATCH — seller attested success, buyer claimed failure</strong> — call <span class="mono">' + esc(c.call_id) + '</span>: the seller retained a signed success attestation (response hash <span class="mono">' + shortHash(a.response_hash) + '</span>) but the buyer claimed failure and the hold was released. Detectable only by comparing the seller attestation with the on-chain record. Buyer dishonesty is NOT solved.</td></tr>';
   }
 
   // S5 — Contract & replay + dispute audit.
@@ -714,15 +744,30 @@
     // another's, and state is per buyer).
     var auditLabel = $('audit-buyer-label');
     if (auditLabel) auditLabel.textContent = 'Demo buyer ' + C.DEMO_BUYER + ' — every row below is that buyer\'s call. Your own replay\'s calls appear on S2, not here.';
+    // Dishonest-001 cross-check, independent of the RPC reads: if the
+    // seed file loads and holds a success attestation for
+    // dishonest-001, say MISMATCH; if the file is absent, the element
+    // stays empty and the static S5 row stands on its explorer tx.
+    var seedP = loadAttestationSeed();
+    seedP.then(function (seed) {
+      var dc = $('dishonest-crosscheck');
+      if (!dc) return;
+      var d = seed && seed['dishonest-001'];
+      dc.innerHTML = d
+        ? '<strong>MISMATCH — seller attested success, buyer claimed failure</strong> — call <span class="mono">dishonest-001</span> (8 Nov 2026): the seller retained a signed success attestation (response hash <span class="mono">' + shortHash(d.response_hash) + '</span>, signature verified off-chain against the registered seller key) but the buyer claimed failure — hold released, seller earned nothing. Full side-by-side: <a href="./../DISHONEST_BUYER_DEMO.md">DISHONEST_BUYER_DEMO.md</a>.'
+        : '';
+    });
     rpcView('get_seller', {}).then(function (s) {
       el.innerHTML = '<p>Contract <span class="mono">' + esc(C.CONTRACT_ID) + '</span> — seller <span class="mono">' + esc(s.seller_account_id) + '</span>, ' +
         'price 0.1 testnet NEAR per successful call, backstop ' + esc(String(s.call_timeout_seconds)) + ' s. ' +
         'Seller public key <span class="mono">' + esc(s.seller_public_key) + '</span>.</p>' + rpcStatusHtml();
     }).catch(function () { el.innerHTML = rpcStatusHtml(); });
     rpcView('list_calls', { buyer_account_id: C.DEMO_BUYER, from_index: '0', limit: '50' }).then(function (calls) {
-      return rpcView('get_buyer_balance', { account_id: C.DEMO_BUYER }).then(function (bal) {
-        return { calls: calls, bal: bal };
-      }, function () { return { calls: calls, bal: null }; });
+      return Promise.all([seedP, rpcView('get_buyer_balance', { account_id: C.DEMO_BUYER }).then(function (bal) {
+        return bal;
+      }, function () { return null; })]).then(function (parts) {
+        return { calls: calls, seed: parts[0], bal: parts[1] };
+      });
     }).then(function (res) {
       var calls = res.calls;
       // H2: balance-after per audit row (same reconstruction as S2;
@@ -747,7 +792,9 @@
         }
         var claim = { 'success-deducted': 'Buyer claimed success (payer-signed receipt)', 'failed-refunded': 'Buyer claimed failure (' + (c.failure_reason || '') + ')', 'timeout-refunded': 'Buyer claimed timeout', 'paid': 'Buyer claim not yet submitted', 'refused': 'No claim — request refused' }[c.status] || c.status;
         var outcome = { 'success-deducted': 'Deducted 0.1 testnet NEAR', 'failed-refunded': 'Released — held amount released, never deducted', 'timeout-refunded': 'Released — held amount released, never deducted', 'paid': 'Price held', 'refused': 'Refused, balances unchanged' }[c.status] || c.status;
-        return '<tr><td><span class="mono">' + esc(c.call_id) + '</span></td><td>' + att + '</td><td>' + esc(claim) + '</td><td>' + esc(outcome) + '</td><td>' + esc(balAfter[c.call_id] || '—') + '</td><td>' + rowExplorerHtml(c, C.DEMO_BUYER) + '</td></tr>';
+        var row = '<tr><td><span class="mono">' + esc(c.call_id) + '</span></td><td>' + att + '</td><td>' + esc(claim) + '</td><td>' + esc(outcome) + '</td><td>' + esc(balAfter[c.call_id] || '—') + '</td><td>' + rowExplorerHtml(c, C.DEMO_BUYER) + '</td></tr>';
+        if (c.status === 'failed-refunded' || c.status === 'timeout-refunded') row += mismatchRowHtml(c, res.seed);
+        return row;
       }).join('');
       $('audit-rows').innerHTML = rows || '<tr><td colspan="6">No calls recorded for the demo buyer.</td></tr>';
     }).catch(function () {
@@ -756,11 +803,17 @@
   }
 
   // S6 — Two sellers (live Layer 2). Recorded fallback state below
-  // must match dashboard/two-seller.json exactly (verify.mjs checks);
-  // it is shown ONLY when the live read fails, labelled as recorded.
+  // matches dashboard/two-seller.json (the 6 Nov state, verify.mjs
+  // checks), except B's withdrawn: the manifest records withdrawn 0
+  // at 6 Nov, while the recorded state here is the 13 Nov re-check —
+  // B earned 0.2 in total, withdrawn 0.2, current earned balance 0.
+  // `earned` is TOTAL earned (live earned + withdrawn); the live
+  // panel compares total earned, not current earned alone. The
+  // recorded state is shown ONLY when the live read fails, labelled
+  // as recorded.
   var TWO_SELLER_RECORDED = [
     { key: 'a', contract: 'mp-meteredpay-a.testnet', seller: 'tedious-sea.testnet', buyer: 'mp-l1a-buyer.testnet', price: '0.1', recorded: '6 Nov 2026', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } },
-    { key: 'b', contract: 'mp-meteredpay-b.testnet', seller: 'mp-seller2.testnet', buyer: 'mp-l1b-buyer.testnet', price: '0.1', recorded: '6 Nov 2026', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } }
+    { key: 'b', contract: 'mp-meteredpay-b.testnet', seller: 'mp-seller2.testnet', buyer: 'mp-l1b-buyer.testnet', price: '0.1', recorded: '6 Nov 2026', finalState: { deposit: '0.5', held: '0', spent: '0.2', available: '0.3', cap: '0.2' }, earned: '0.2', withdrawn: '0.2', claimSummary: { calls: 5, successes: 2, failureClaims: 1, timeoutClaims: 1, refusals: 1 } }
   ];
   var twoSellerManifest = null;
   function loadTwoSellerManifest() {
@@ -776,6 +829,12 @@
     });
     return m;
   }
+  // Decimal-string arithmetic for seller totals: the contract
+  // reports earned (not yet withdrawn) and withdrawn separately;
+  // total earned is their sum, current earned balance is their
+  // difference. Values are small fixed-point decimals ('0', '0.2').
+  function decSum(a, b) { return String((parseFloat(a) + parseFloat(b)).toFixed(4)).replace(/\.?0+$/, '') || '0'; }
+  function decDiff(a, b) { return String((parseFloat(a) - parseFloat(b)).toFixed(4)).replace(/\.?0+$/, '') || '0'; }
   function s6PanelHtml(inst, res) {
     var head = '<h3>Live now — instance ' + inst.key.toUpperCase() + ' (<span class="mono">' + esc(inst.contract) + '</span>)</h3>';
     var ok = res.every(function (r) { return r.status === 'fulfilled'; });
@@ -784,26 +843,33 @@
       return head + '<div class="banner" role="alert"><strong>Live read failed (' + esc(missing) + ') — showing the recorded ' + esc(inst.recorded) + ' state below; retry.</strong> The recorded state is settled history, not a live read.</div>' +
         '<p>Seller <span class="mono">' + esc(inst.seller) + '</span> · buyer <span class="mono">' + esc(inst.buyer) + '</span> (recorded ' + esc(inst.recorded) + ')</p>' +
         fiveStaticHtml(inst.finalState) +
-        '<p>Earned (not yet withdrawn): <strong>' + esc(inst.earned) + ' testnet NEAR</strong> · Withdrawn: ' + esc(inst.withdrawn) + ' testnet NEAR (recorded 6 Nov state).</p>';
+        '<p>Earned in total: <strong>' + esc(inst.earned) + ' testnet NEAR</strong> · Withdrawn: ' + esc(inst.withdrawn) + ' testnet NEAR · Current earned balance: ' + esc(decDiff(inst.earned, inst.withdrawn)) + ' testnet NEAR (recorded ' + esc(inst.recorded) + ' state).</p>';
     }
     var s = res[0].value, bal = res[1].value, bb = res[2].value;
     var matchSeller = s.seller_account_id === inst.seller;
-    var matchEarned = fmtYocto(bal.earned) === inst.earned;
+    // Total earned, not current earned alone: a seller who withdrew
+    // everything reads earned 0 live but earned 0.2 in total (instance
+    // B — withdrawn 13 Nov 2026). Compare earned + withdrawn against
+    // the recorded total, and withdrawn against the recorded withdrawn.
+    var liveEarned = fmtYocto(bal.earned), liveWithdrawn = fmtYocto(bal.withdrawn);
+    var liveTotalEarned = decSum(liveEarned, liveWithdrawn);
+    var matchTotalEarned = liveTotalEarned === inst.earned;
+    var matchWithdrawn = liveWithdrawn === inst.withdrawn;
     var matchBal = fmtYocto(bb.deposit) === inst.finalState.deposit && fmtYocto(bb.held) === inst.finalState.held && fmtYocto(bb.spent) === inst.finalState.spent && fmtYocto(bb.available) === inst.finalState.available && fmtYocto(bb.budget_cap) === inst.finalState.cap;
     var time = new Date().toLocaleTimeString();
-    var status = (matchSeller && matchEarned && matchBal)
+    var status = (matchSeller && matchTotalEarned && matchWithdrawn && matchBal)
       ? '<p class="small">Live read ' + esc(time) + ' — matches the recorded final state.</p>'
-      : '<div class="banner" role="alert"><strong>Live read ' + esc(time) + ' — differs from the recorded ' + esc(inst.recorded) + ' state.</strong> Seller match: ' + (matchSeller ? 'yes' : 'NO') + '; earned match: ' + (matchEarned ? 'yes' : 'NO') + '; buyer balance match: ' + (matchBal ? 'yes' : 'NO') + '. The live values below are what the contract returns now.</div>';
+      : '<div class="banner" role="alert"><strong>Live read ' + esc(time) + ' — differs from the recorded ' + esc(inst.recorded) + ' state.</strong> Seller match: ' + (matchSeller ? 'yes' : 'NO') + '; total earned match: ' + (matchTotalEarned ? 'yes' : 'NO') + '; withdrawn match: ' + (matchWithdrawn ? 'yes' : 'NO') + '; buyer balance match: ' + (matchBal ? 'yes' : 'NO') + '. The live values below are what the contract returns now.</div>';
     return head + status +
       '<p>Seller <span class="mono">' + esc(s.seller_account_id) + '</span> · price ' + esc(inst.price) + ' testnet NEAR per successful call · backstop ' + esc(String(s.call_timeout_seconds)) + ' s</p>' +
-      '<p>Earned (not yet withdrawn): <strong>' + esc(fmtYocto(bal.earned)) + ' testnet NEAR</strong> · Withdrawn: ' + esc(fmtYocto(bal.withdrawn)) + ' testnet NEAR (live).</p>' +
+      '<p>Earned in total: <strong>' + esc(liveTotalEarned) + ' testnet NEAR</strong> (current earned balance ' + esc(liveEarned) + ' testnet NEAR, withdrawn ' + esc(liveWithdrawn) + ' testnet NEAR) (live).</p>' +
       '<h4>Buyer <span class="mono">' + esc(inst.buyer) + '</span> — live five-number balance</h4>' +
       fiveHtml({ deposit: bb.deposit, held: bb.held, spent: bb.spent, available: bb.available, cap: bb.budget_cap });
   }
   function loadTwoSellers() {
     var aEl = $('s6-live-a'), bEl = $('s6-live-b'), cEl = $('s6-claims');
-    if (aEl) aEl.innerHTML = '<p aria-live="polite">Loading live state for instance A…</p>';
-    if (bEl) bEl.innerHTML = '<p aria-live="polite">Loading live state for instance B…</p>';
+    if (aEl) aEl.innerHTML = '<p aria-live="polite">Loading live state for instance A… (' + attemptLabelHtml() + ')</p>';
+    if (bEl) bEl.innerHTML = '<p aria-live="polite">Loading live state for instance B… (' + attemptLabelHtml() + ')</p>';
     loadTwoSellerManifest().then(function (man) {
       var jobs = TWO_SELLER_RECORDED.map(function (inst) {
         var min = man ? man.instances.filter(function (x) { return x.contract === inst.contract; })[0] : null;
@@ -859,7 +925,7 @@
   }
   function loadInstanceC() {
     var cEl = $('s7-live-c'), claimsEl = $('s7-claims');
-    if (cEl) cEl.innerHTML = '<p aria-live="polite">Loading live state for instance C…</p>';
+    if (cEl) cEl.innerHTML = '<p aria-live="polite">Loading live state for instance C… (' + attemptLabelHtml() + ')</p>';
     loadInstanceCManifest().then(function (man) {
       var inst = INSTANCE_C_RECORDED;
       var min = man ? man.instances.filter(function (x) { return x.contract === inst.contract; })[0] : null;
@@ -908,8 +974,16 @@
       return n ? parseFloat(String(n.value || '').replace(/,/g, '')) : NaN;
     }
     var c = num('stakes-calls'), r = num('stakes-rate'), p = num('stakes-price');
-    if (!isFinite(c) || !isFinite(r) || !isFinite(p) || c < 0 || r < 0 || r > 100 || p < 0) {
-      el.textContent = 'Enter numbers above — illustrative only, no real usage data.';
+    if (!isFinite(c) || c < 0) {
+      el.textContent = 'Calls per day must be a number 0 or more — illustrative only, no real usage data.';
+      return;
+    }
+    if (!isFinite(r) || r < 0 || r > 100) {
+      el.textContent = 'Fail rate must be 0–100 — illustrative only, no real usage data.';
+      return;
+    }
+    if (!isFinite(p) || p < 0) {
+      el.textContent = 'Price per call must be a number 0 or more — illustrative only, no real usage data.';
       return;
     }
     var failedPerDay = c * (r / 100);
@@ -939,9 +1013,6 @@
     if (guidedBtn) guidedBtn.addEventListener('click', guidedStart);
     var sellerLoadBtn = $('seller-load');
     if (sellerLoadBtn) sellerLoadBtn.addEventListener('click', loadSeller);
-    // F2: health check behind an explicit button — never auto-probed.
-    var healthBtn = $('seller-health-btn');
-    if (healthBtn) healthBtn.addEventListener('click', checkSellerHealth);
     var s6RetryBtn = $('s6-retry');
     if (s6RetryBtn) s6RetryBtn.addEventListener('click', loadTwoSellers);
     var s7RetryBtn = $('s7-retry');
@@ -983,5 +1054,5 @@
 
   // ------------------------------------------------------------------
   // Exposed for the headless verification harness (not part of the UI).
-  window.__meteredpay = { PLAYBACK: PLAYBACK, renderPlayback: renderPlayback, renderS3: renderS3, route: route, loadBuyer: loadBuyer, loadReplay: loadReplay, loadSeller: loadSeller, loadTwoSellers: loadTwoSellers, loadInstanceC: loadInstanceC, claimStats: claimStats, stakesYear: stakesYear, stakesCalc: stakesCalc, fmtYocto: fmtYocto, fiveHtml: fiveHtml, fiveStaticHtml: fiveStaticHtml, guidedStart: guidedStart, guidedNext: guidedNext, guidedBack: guidedBack, guidedShowTimeout: guidedShowTimeout, guidedState: guidedState, renderGuided: renderGuided, runWaitDemo: runWaitDemo, skipWaitDemo: skipWaitDemo, rowExplorerHtml: rowExplorerHtml, liveBalanceAfter: liveBalanceAfter, liveBalanceBefore: liveBalanceBefore };
+  window.__meteredpay = { PLAYBACK: PLAYBACK, renderPlayback: renderPlayback, renderS3: renderS3, route: route, loadBuyer: loadBuyer, loadReplay: loadReplay, loadSeller: loadSeller, loadTwoSellers: loadTwoSellers, loadInstanceC: loadInstanceC, claimStats: claimStats, stakesYear: stakesYear, stakesCalc: stakesCalc, fmtYocto: fmtYocto, fiveHtml: fiveHtml, fiveStaticHtml: fiveStaticHtml, guidedStart: guidedStart, guidedNext: guidedNext, guidedBack: guidedBack, guidedState: guidedState, renderGuided: renderGuided, runWaitDemo: runWaitDemo, skipWaitDemo: skipWaitDemo, rowExplorerHtml: rowExplorerHtml, liveBalanceAfter: liveBalanceAfter, liveBalanceBefore: liveBalanceBefore, loadAttestationSeed: loadAttestationSeed, mismatchRowHtml: mismatchRowHtml };
 })();

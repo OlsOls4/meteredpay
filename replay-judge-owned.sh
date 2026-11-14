@@ -42,7 +42,16 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 RPC_URL="${RPC_URL:-https://rpc.testnet.near.org}"
 FROZEN_WASM_SHA="c54ae8e9d657338ccc695d32689fac322aaa1d77b90fd90e0ed63f86decbb3b0"
-WASM="target/near/meteredpay.wasm"
+# Wasm location (post-submission council, 14 Nov 2026): the build output
+# target/near/meteredpay.wasm is gitignored, so a clean checkout has no
+# wasm at all. Also accept a repo copy at wasm/meteredpay.wasm (to be
+# uploaded separately) — whichever file is found is SHA-256-verified
+# against the frozen wasm before deploy. Neither existing is a clear
+# error, not a cryptic failure.
+WASM=""
+for CANDIDATE in target/near/meteredpay.wasm wasm/meteredpay.wasm; do
+  if [ -f "$CANDIDATE" ]; then WASM="$CANDIDATE"; break; fi
+done
 PRICE_YOCTO="100000000000000000000000" # 0.1 testnet NEAR/call
 TIMEOUT_SECONDS="600"
 MODE="replay"
@@ -77,6 +86,8 @@ echo "No builder key, token, or permission is used anywhere in this script."
 command -v node >/dev/null || { echo "Node not found. Install Node 24 (https://nodejs.org, LTS)." >&2; exit 1; }
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 [ "$NODE_MAJOR" -ge 24 ] || { echo "Node 24+ required (found $NODE_MAJOR)." >&2; exit 1; }
+command -v cargo >/dev/null || { echo "Rust (cargo) not found. Install it first (copy-paste):" >&2; echo "  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh" >&2; echo "  source \"\$HOME/.cargo/env\"   # or restart your shell" >&2; echo "  rustup target add wasm32-unknown-unknown" >&2; echo "Then install cargo-near (below) and re-run ./replay-judge-owned.sh." >&2; exit 1; }
+command -v cargo-near >/dev/null || { echo "cargo-near not found. Install it first (copy-paste):" >&2; echo "  cargo install cargo-near" >&2; echo "  rustup target add wasm32-unknown-unknown   # if not already added" >&2; echo "Then re-run ./replay-judge-owned.sh." >&2; exit 1; }
 command -v near >/dev/null || { echo "near-cli not found. Install near-cli-rs 0.30.1 (see replay.sh for the install commands)." >&2; exit 1; }
 command -v python3 >/dev/null || { echo "python3 not found (needed for the code-hash check)." >&2; exit 1; }
 command -v curl >/dev/null || { echo "curl not found." >&2; exit 1; }
@@ -84,7 +95,8 @@ command -v curl >/dev/null || { echo "curl not found." >&2; exit 1; }
 echo "Node: $(node --version) | near-cli: $(near --version 2>&1 | head -n 1)"
 
 # --- step 1: the wasm must be the frozen wasm, byte for byte --------------
-[ -f "$WASM" ] || { echo "Wasm not found at $WASM. Build it first: cargo near build non-reproducible-wasm (never bare 'cargo near build')." >&2; exit 1; }
+[ -n "$WASM" ] || { echo "No frozen wasm found (looked for target/near/meteredpay.wasm and wasm/meteredpay.wasm)." >&2; echo "Build it first: cargo near build non-reproducible-wasm (never bare 'cargo near build')." >&2; echo "Or place a verified copy of the frozen wasm at wasm/meteredpay.wasm (it is SHA-256-checked before deploy)." >&2; exit 1; }
+echo "Wasm: $WASM"
 SHA="$(sha256sum "$WASM" | cut -d' ' -f1)"
 echo "Wasm SHA-256: $SHA"
 [ "$SHA" = "$FROZEN_WASM_SHA" ] || { echo "STOP: wasm SHA-256 differs from the frozen wasm ($FROZEN_WASM_SHA). The code has changed since the freeze — do not deploy." >&2; exit 1; }
@@ -192,7 +204,7 @@ if [ "$STATUS" -ne 0 ]; then
   exit "$STATUS"
 fi
 echo "== Asserting frozen final state on the judge-owned instance (deposit 0.5 / held 0 / spent 0.2 / available 0.3 / cap 0.2) =="
-(cd buyer && node assert-final-state.mjs --buyer "$BUYER" --contract "$CONTRACT") || { echo "Final-state assertion FAILED — this replay did NOT reproduce the frozen final state." >&2; exit 1; }
+(cd buyer && node assert-final-state.mjs --buyer "$BUYER" --contract "$CONTRACT" --mode "$MODE") || { echo "Final-state assertion FAILED — this replay did NOT reproduce the frozen final state." >&2; exit 1; }
 echo ""
 echo "JUDGE-OWNED REPLAY OK in ${ELAPSED}s."
 echo "  Contract (judge-owned): $CONTRACT (code hash = frozen wasm SHA-256 $FROZEN_WASM_SHA)"

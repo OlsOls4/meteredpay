@@ -1,5 +1,12 @@
 # MeteredPay — third-party seller dry run (days 6–7)
 
+> **DEPRECATED (14 Nov 2026).** Superseded by `../seller-api/server.mjs`
+> + `../seller-api/SELLER_SPEC.md`. This dry-run seller is NOT on any
+> replay path (`replay.sh`, `replay-judge-owned.sh`) and is kept only as
+> the historical record of the days 6–7 spec-conformance check. Do not
+> use it for new work — build against `SELLER_SPEC.md` and test with
+> `../seller-api/server.mjs` instead.
+
 **Status: DRY RUN, not a live seller.** An independent seller
 implementation written from `../seller-api/SELLER_SPEC.md` alone —
 it does NOT copy `../seller-api/server.mjs` logic. It reuses only the

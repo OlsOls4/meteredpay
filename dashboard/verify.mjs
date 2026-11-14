@@ -67,6 +67,14 @@ function cannedFetch(url, opts) {
     const man = readFileSync(join(HERE, 'instance-c.json'), 'utf8');
     return Promise.resolve({ json: () => Promise.resolve(JSON.parse(man)) });
   }
+  // S5 attestation seed (post-submission cross-check): canned
+  // dishonest-001 line — values from DISHONEST_BUYER_DEMO.md §A
+  // (response hash + seller signature verified off-chain there;
+  // timestamp from the run-log filename in that doc).
+  if (typeof url === 'string' && url.endsWith('attestations-seed.jsonl')) {
+    const line = JSON.stringify({ call_id: 'dishonest-001', buyer: 'mp-dishonest-wdvw4o.testnet', response_hash: '316b7bb3f0fc8f0fa013848d7edf20301745cb18aa8c02ba9df5b9612eeb42b8', seller_signature: 'F2/CgzUQtm3oBmKliNKVlQ4ydwRO4Iz/RmCM+JdvRUYh2wHPOzgYwjJ7g47mtx6rGHR1lIKgCAYFa3Y/abSsAg==', timestamp: '2026-11-08T09:16:24Z' });
+    return Promise.resolve({ text: () => Promise.resolve(line + '\n') });
+  }
   // Seller /health check carries no RPC body.
   if (!opts || !opts.body) {
     return Promise.resolve({ json: () => Promise.resolve({ status: 'ok', seller_account_id: 'tedious-sea.testnet', price_per_call_yocto: '100000000000000000000000', mode: 'demo' }) });
@@ -102,7 +110,10 @@ function cannedFetch(url, opts) {
     const m = body.params.method_name;
     let data = {};
     if (m === 'get_seller') data = { seller_account_id: seller, seller_public_key: key, price_per_call: '100000000000000000000000', call_timeout_seconds: 600 };
-    else if (m === 'get_seller_balance') data = { seller_account_id: seller, earned: '200000000000000000000000', withdrawn: '0' };
+    else if (m === 'get_seller_balance') data = { seller_account_id: seller, earned: isA ? '200000000000000000000000' : '0', withdrawn: isA ? '0' : '200000000000000000000000' };
+    // B: earned 0.2 in total, withdrawn 0.2 on 13 Nov 2026 — current
+    // earned balance 0 (live reads report earned + withdrawn
+    // separately; the panel compares the total).
     else if (m === 'get_buyer_balance') data = { account_id: buyer, deposit: '500000000000000000000000', held: '0', spent: '200000000000000000000000', available: '300000000000000000000000', budget_cap: '200000000000000000000000' };
     else if (m === 'list_calls') data = [
       { call_id: pfx + '-overbudget-001', status: 'refused', price: '100000000000000000000000', response_hash: null, failure_reason: null, proposed_height: 200005, resolved_height: 200006 },
@@ -188,15 +199,15 @@ check('S5 audit failed row links to its S3 receipt',
 check('S5 audit success row still shows the attested hash',
   auditHtml.includes('58aa417c'));
 
-// --- Test 5: H1 guided Journey 0 — 4 beats, zero fetch, keyboard ----
-// Canonical freeze1011 order: success → fail → success (cap) → refusal;
-// timeout is the optional 5th beat. The 2nd success must state the cap.
+// --- Test 5: H1 guided Journey 0 — 5 beats, zero fetch, keyboard ----
+// Canonical freeze1011 order: success → fail → timeout → success
+// (cap) → refusal. The 2nd success must state the cap.
 const mp = ctx.window.__meteredpay;
 fetchCalls = [];
 mp.guidedStart();
 let g = els['guided'].innerHTML;
 check('guided starts on the success beat', g.includes('freeze1011-success-001') && g.includes('Succeeded') && g.includes('Deducted 0.1'));
-check('guided shows 1 of 4 progress', g.includes('1 of 4'));
+check('guided shows 1 of 5 progress', g.includes('1 of 5'));
 check('guided beat 1 service is schema-validation', g.includes('meteredpay-schema-validate'));
 check('guided card has result + amount + balance-after + explorer + receipt',
   g.includes('Balance after this call') && g.includes('testnet.nearblocks.io/txns/BD3fkPVQNBBPjroxS85y3Bam2GK87TxDKSiFMVehC3Zd') && g.includes('#/s3?call=freeze1011-success-001'));
@@ -206,22 +217,22 @@ check('guided progressbar carries aria-valuenow', g.includes('role="progressbar"
 check('guided start makes zero fetch calls', fetchCalls.length === 0);
 mp.guidedNext();
 g = els['guided'].innerHTML;
-check('guided step 2 is the failed call', g.includes('freeze1011-fail-001') && g.includes('2 of 4') && g.includes('Hold released'));
+check('guided step 2 is the failed call', g.includes('freeze1011-fail-001') && g.includes('2 of 5') && g.includes('Hold released'));
 mp.guidedNext();
 g = els['guided'].innerHTML;
-check('guided step 3 is the second success (cap reached)', g.includes('freeze1011-success-002') && g.includes('3 of 4') && g.includes('Deducted 0.1'));
-check('guided step 3 states spent now 0.2 = cap, next call refused', g.includes('Spent now 0.2 = cap — the next call will be refused.'));
+check('guided step 3 is the timeout call', g.includes('freeze1011-timeout-001') && g.includes('3 of 5') && g.includes('Hold released'));
 mp.guidedNext();
 g = els['guided'].innerHTML;
-check('guided step 4 is the refused call', g.includes('freeze1011-overbudget-001') && g.includes('4 of 4') && g.includes('over_budget'));
+check('guided step 4 is the second success (cap reached)', g.includes('freeze1011-success-002') && g.includes('4 of 5') && g.includes('Deducted 0.1'));
+check('guided step 4 states spent now 0.2 = cap, next call refused', g.includes('Spent now 0.2 = cap — the next call will be refused.'));
+mp.guidedNext();
+g = els['guided'].innerHTML;
+check('guided step 5 is the refused call', g.includes('freeze1011-overbudget-001') && g.includes('5 of 5') && g.includes('over_budget'));
 check('guided ends at S5', g.includes('#/s5'));
 mp.guidedBack();
-check('guided Back returns to step 3', els['guided'].innerHTML.includes('3 of 4'));
+check('guided Back returns to step 4', els['guided'].innerHTML.includes('4 of 5'));
 mp.guidedNext();
-check('guided state reports step 4 of 4', mp.guidedState().index === 3 && mp.guidedState().total === 4);
-mp.guidedShowTimeout();
-g = els['guided'].innerHTML;
-check('guided optional timeout beat is 5 of 5', g.includes('5 of 5') && g.includes('freeze1011-timeout-001'));
+check('guided state reports step 5 of 5', mp.guidedState().index === 4 && mp.guidedState().total === 5);
 check('guided whole sequence makes zero fetch calls', fetchCalls.length === 0);
 
 // --- Test 6: S3 service label matches the row's seller output (F1
@@ -330,7 +341,7 @@ check('M12 skip ends the wait demo',
   check('M6 S5 steps use Run, not the vacuous Do', !indexHtml.includes('Do:'));
   check('M9 tables scroll inside .table-wrap at 320 px', css.includes('.table-wrap') && css.includes('overflow-x: auto'));
   check('U-5 S1 leads with the schema-validation service',
-    indexHtml.indexOf('meteredpay-schema-validate') < indexHtml.indexOf('<h3>Recorded demo run</h3>'));
+    indexHtml.indexOf('meteredpay-schema-validate') < indexHtml.indexOf('Recorded demo run</h3>'));
   check('U-5 playback table labels the canonical freeze1011 run',
     indexHtml.includes('<caption') && indexHtml.includes('Canonical replay — freeze1011 run') && indexHtml.includes('frozen-run.json'));
   check('U-5 no word-count service remains in the dashboard',
@@ -404,12 +415,10 @@ check('M12 skip ends the wait demo',
   mp.route();
 }
 
-// --- Test 14: guided restart resets the timeout beat ---------------
-mp.guidedShowTimeout();
-check('guided timeout beat is 5 of 5 (precondition)', els['guided'].innerHTML.includes('5 of 5'));
+// --- Test 14: guided restart returns to beat 1 of 5 ----------------
 mp.guidedStart();
-check('guided restart resets to 1 of 4 (timeout beat off again)',
-  els['guided'].innerHTML.includes('1 of 4') && mp.guidedState().total === 4 && mp.guidedState().timeoutOn === false);
+check('guided restart resets to 1 of 5',
+  els['guided'].innerHTML.includes('1 of 5') && mp.guidedState().total === 5 && mp.guidedState().index === 0);
 
 // --- Test 15: S4 partial failure + retry (mirrors S2 M5) -----------
 {
@@ -443,7 +452,7 @@ check('guided restart resets to 1 of 4 (timeout beat off again)',
     els['playback-rows'].innerHTML.includes('Spent 0.2 · Available 0.3 testnet NEAR'));
   check('S1 has one "See the 60-second proof" heading (dedupe)',
     (indexHtml.match(/<h3>See the 60-second proof/g) || []).length === 1 &&
-    indexHtml.includes('<h3>Recorded demo run</h3>'));
+    indexHtml.includes('Recorded demo run</h3>'));
   check('S5 audit buyer label names the demo buyer + points own replays at S2',
     els['audit-buyer-label'].textContent.includes('freeze1011-buyer.testnet') &&
     els['audit-buyer-label'].textContent.includes('Your own replay\'s calls appear on S2'));
@@ -492,8 +501,8 @@ check('S2 Load button is re-enabled after loading', els['buyer-load'].disabled =
   }
   check('F-R4 no "X post published" in README', !readme.includes('X post published'));
   check('F-R4 no "X post published by the human" in README', !readme.includes('X post published by the human'));
-  check('F-R4 README states the X post is drafted, not published',
-    readme.includes('X demo post drafted') && readme.includes('to be published by the human team lead before submission'));
+  check('F-R4 README states the X post is live, not drafted',
+    readme.includes('X demo post live 14 Nov 2026') && readme.includes('https://x.com/OlsOls4/status/2121657509085647308') && !readme.includes('X demo post drafted'));
   check('L2 README §2.5 labels the video run as a separate recorded run',
     sec25.includes('mp-video05') && sec25.includes('video/video-run-log.md'));
 }
@@ -597,6 +606,10 @@ check('U-F8 S3 has a Make another call link to S2',
     a.includes('tedious-sea.testnet') && a.includes('matches the recorded final state') && a.includes('<dt>Spent</dt><dd>0.2</dd>'));
   check('S6 panel B shows live seller + earned 0.2 + recorded match',
     b.includes('mp-seller2.testnet') && b.includes('matches the recorded final state') && b.includes('<dt>Spent</dt><dd>0.2</dd>'));
+  check('S6 panel B shows total earned 0.2, current 0, withdrawn 0.2',
+    b.includes('Earned in total: <strong>0.2 testnet NEAR</strong>') && b.includes('(current earned balance 0 testnet NEAR, withdrawn 0.2 testnet NEAR) (live)'));
+  check('S6 panel A shows total earned 0.2, current 0.2, withdrawn 0',
+    a.includes('Earned in total: <strong>0.2 testnet NEAR</strong>') && a.includes('(current earned balance 0.2 testnet NEAR, withdrawn 0 testnet NEAR) (live)'));
   check('S6 live reads hit both instances (per-instance RPC)',
     fetchCalls.filter((u) => typeof u === 'string' && u.includes('fastnear')).length >= 8);
   const claims = els['s6-claims'].innerHTML;
@@ -624,7 +637,7 @@ check('U-F8 S3 has a Make another call link to S2',
   const a = els['s6-live-a'].innerHTML, b = els['s6-live-b'].innerHTML;
   check('S6 instance A still live when B RPC fails', a.includes('matches the recorded final state'));
   check('S6 instance B shows failure banner + recorded 6 Nov state',
-    b.includes('Live read failed') && b.includes('recorded 6 Nov state'));
+    b.includes('Live read failed') && b.includes('recorded 6 Nov 2026 state'));
   check('S6 instance B recorded state shows the five numbers, not a blank/zero balance',
     b.includes('<dt>Spent</dt><dd>0.2</dd>') && b.includes('<dt>Available</dt><dd>0.3</dd>'));
   check('S6 instance B failure names the missing reads', b.includes('could not be loaded') || b.includes('Live read failed'));
@@ -679,10 +692,11 @@ check('U-F8 S3 has a Make another call link to S2',
   const appJs = readFileSync(join(HERE, 'app.js'), 'utf8');
   check('F2 S4 shows the neutral always-true state line, no auto failure banner',
     indexHtml.includes('Demonstrator seller API: local only') && indexHtml.includes('not hosted; it ran for the recorded runs and is stopped now'));
-  check('F2 health check is behind an explicit button',
-    indexHtml.includes('id="seller-health-btn"') && indexHtml.includes('Check seller on this machine'));
-  const loadSellerBody = appJs.slice(appJs.indexOf('function loadSeller()'), appJs.indexOf('function checkSellerHealth()'));
-  check('F2 loadSeller never auto-probes the seller API', !loadSellerBody.includes('checkSellerHealth'));
+  check('F2 S4 shows the stopped-seller static line, no health-check button',
+    indexHtml.includes('Demonstrator seller stopped after the recorded runs; use the recorded run on S1 or replay from the README.') &&
+    !indexHtml.includes('seller-health-btn') && !indexHtml.includes('Check seller on this machine'));
+  check('F2 the seller-health check is gone from app.js (no localhost fetch)',
+    !appJs.includes('checkSellerHealth') && !appJs.includes("C.SELLER_URL + '/health'"));
   check('F3 S1 concrete-call block shows the real input/output + hash',
     indexHtml.includes('MeteredPay demo call freeze1011-success-001: pay per successful call, nothing for a failure.') &&
     indexHtml.includes('word_count:12, char_count:92') && indexHtml.includes('58aa417c'));
@@ -783,12 +797,20 @@ check('U-F8 S3 has a Make another call link to S2',
     indexHtml.includes('Final: deposit <strong>0.5</strong> / held <strong>0</strong> / spent <strong>0.2</strong> / available <strong>0.3</strong> / cap <strong>0.2</strong>'));
   check('S1 money strip cites the live 13 Nov re-read (seller earned 4.6 cumulative)',
     indexHtml.includes('Re-read live 13 Nov 2026') && indexHtml.includes('earned 4.6 testnet NEAR in total'));
-  check('S1 differentiation strip names all three, each linked',
-    indexHtml.includes('Spend Guard pays on attempt') && indexHtml.includes('x402 settles on the seller') &&
+  check('S1 differentiation strip names Spend Guard, x402, MeteredPay + Genesis',
+    indexHtml.includes('Spend Guard pays on attempt') &&
+    indexHtml.includes("x402's authorization flow settles only after the resource handler succeeds") &&
     indexHtml.includes('MeteredPay deducts only on a buyer-verified receipt') &&
+    indexHtml.includes('Genesis also pays on outcome') &&
     indexHtml.includes('github.com/mubudot/near-agent-spend-guard') &&
     indexHtml.includes('developers.circle.com/x402-facilitators/x402') &&
     indexHtml.includes('testnet.nearblocks.io/txns/BD3fkPVQNBBPjroxS85y3Bam2GK87TxDKSiFMVehC3Zd'));
+  check('S1 x402 card uses the corrected §2.1 wording, not the old say-so claim',
+    indexHtml.includes('no default/shipped x402 flow gates capture on the payer\'s verified success receipt') &&
+    indexHtml.includes('the capture decision sits with the resource server/facilitator') &&
+    // Forbidden old phrases, built from parts so a plain grep for
+    // them over dashboard/ finds no occurrence anywhere.
+    !indexHtml.includes('settles on the seller' + "'s say-so") && !indexHtml.includes('no on-' + 'protocol recourse'));
   check('S1 headline is the deducted-zero wording',
     indexHtml.includes('deducted: zero on a failed call') && !indexHtml.includes('nothing for a failed call'));
   check('S1 states the dishonest-buyer limit up front',
@@ -843,6 +865,98 @@ check('U-F8 S3 has a Make another call link to S2',
   const s4 = els['seller-result'].innerHTML;
   check('S4 shows withdrawn 0.2 from live RPC, not a hardcoded 0',
     s4.includes('<dt>Withdrawn</dt><dd>0.2 testnet NEAR</dd>') && s4.includes('<dt>Earned (not yet withdrawn)</dt><dd>0.8 testnet NEAR</dd>'))
+}
+
+// --- Test 28: post-submission bundle (14 Nov 2026) -----------------
+{
+  const indexHtml = readFileSync(join(HERE, 'index.html'), 'utf8');
+  const appJs = readFileSync(join(HERE, 'app.js'), 'utf8');
+  // Value box (task 2) + skip link + video line (task 7).
+  check('S1 value box is verbatim under the headline',
+    indexHtml.includes('Why this matters — A buyer agent pays only for a call it verified succeeded. A failed call releases its hold: deducted zero.') &&
+    indexHtml.includes('Next step that would prove this as a market: a hosted seller and one external buyer completing a full run. Submitted 14 Nov 2026 to the NEAR Hackathon (agents, open, business, security, defi); demo video v3.5 and X post linked below.'));
+  check('S1 has a Skip to the recorded run jump link',
+    indexHtml.includes('Skip to the recorded run ↓') && indexHtml.includes('id="recorded-run"'));
+  check('S1 video line links the 1:27 demo + X post',
+    indexHtml.includes('Prefer video? Watch the 1:27 demo:') && indexHtml.includes('https://youtu.be/1JB0lV-sPRA') && indexHtml.includes('https://x.com/OlsOls4/status/2121657509085647308'));
+  // Genesis card (task 3).
+  check('S1 Genesis card states the owner-only pay_job difference',
+    indexHtml.includes('Genesis (same hackathon, checked 14 Nov 2026) also pays on outcome') &&
+    indexHtml.includes("Genesis's pay_job is owner-only") &&
+    indexHtml.includes('per API call, not per job'));
+  // Header Repo link + descriptive footer links (task 7).
+  check('Header nav has a Repo link to the public repo',
+    indexHtml.includes('href="https://github.com/OlsOls4/meteredpay">Repo</a>'));
+  check('Footer links are descriptive, not bare filenames',
+    indexHtml.includes('README (replay instructions)') && indexHtml.includes('Glossary (frozen wording)') &&
+    !indexHtml.includes('>README</a>') && !indexHtml.includes('>GLOSSARY.md</a>'));
+  // S6 B agreement (task 4): caption, S1 card, live panel.
+  check('S6 B caption states earned 0.2 in total, withdrawn 0.2, current 0',
+    indexHtml.includes('Seller earned 0.2 in total, withdrawn 0.2 (current earned balance 0)'));
+  check('No dashboard copy still says B earned 0 without "in total"',
+    !indexHtml.includes('Seller earned ' + '0, withdrawn 0.2'));
+  // S2 unspent-deposit line (task 10e).
+  check('S2 states unspent deposit cannot be withdrawn in v1',
+    indexHtml.includes('Unspent deposit cannot be withdrawn in v1 — only deposit what you plan to spend.'));
+  // Stakes inputs are number fields (task 9).
+  check('Stakes inputs are type=number with min/max/step',
+    indexHtml.includes('<input type="number" id="stakes-calls"') && indexHtml.includes('<input type="number" id="stakes-rate"') && indexHtml.includes('<input type="number" id="stakes-price"') &&
+    indexHtml.includes('min="0" max="100" step="0.1"'));
+  // S5 honesty labels (task 10a–c).
+  check('S5 surfaces the missing fail-attestation-hash gap',
+    indexHtml.includes("the canonical fail call's seller error attestation hash is not recorded in the run log"));
+  check('S5 pre-deadline backstop row is labelled prose only, no tx',
+    indexHtml.includes('Prose only, no tx — not independently verifiable'));
+  check('S5 dispute-audit heading is qualified off-chain comparison only',
+    indexHtml.includes('Dispute audit — seller attestation vs buyer claim vs outcome (off-chain comparison only — the contract stores nothing for failure claims)'));
+  // frozen-run.json as-of date (task 12).
+  const manifest28 = JSON.parse(readFileSync(join(HERE, 'frozen-run.json'), 'utf8'));
+  check('frozen-run seller_cumulative note carries the 5 Nov 2026 21:06 UTC as-of date',
+    manifest28.seller_cumulative.note.includes('at the end of this run, 5 Nov 2026 21:06 UTC'));
+  // Loading attempt counter (task 8): visible while loading.
+  els['buyer-account'].value = 'freeze1011-buyer.testnet';
+  mp.loadBuyer();
+  check('S2 loading text shows the RPC attempt counter (1 of 4)',
+    els['buyer-result'].innerHTML.includes('trying testnet RPC, attempt 1 of 4'));
+  await new Promise((r) => setTimeout(r, 200));
+  // Stakes error names the field (task 9); defaults still £365.
+  els['stakes-calls'].value = '1000';
+  els['stakes-rate'].value = '150';
+  els['stakes-price'].value = '0.01';
+  mp.stakesCalc();
+  check('Stakes error names the offending field (fail rate)',
+    els['stakes-result'].textContent.includes('Fail rate must be 0–100'));
+  els['stakes-rate'].value = '10';
+  mp.stakesCalc();
+  check('Stakes calculator still computes £365 on the defaults',
+    els['stakes-result'].textContent.includes('£365'));
+  // S5 seed cross-check (task 10d): MISMATCH for dishonest-001,
+  // silence for clean failures, no break when the file is absent.
+  mp.loadReplay();
+  await new Promise((r) => setTimeout(r, 200));
+  check('S5 dishonest cross-check renders MISMATCH from the seed file',
+    els['dishonest-crosscheck'].innerHTML.includes('MISMATCH — seller attested success, buyer claimed failure') &&
+    els['dishonest-crosscheck'].innerHTML.includes('316b7bb3'));
+  check('S5 audit rows show no MISMATCH for the clean demo-buyer failures',
+    els['audit-rows'].innerHTML.includes('freeze1011-fail-001') && !els['audit-rows'].innerHTML.includes('MISMATCH'));
+  check('S5 mismatch helper flags a seeded failed call',
+    mp.mismatchRowHtml({ call_id: 'dishonest-001', status: 'failed-refunded' }, { 'dishonest-001': { response_hash: '316b7bb3f0fc8f0fa013848d7edf20301745cb18aa8c02ba9df5b9612eeb42b8' } }).includes('MISMATCH — seller attested success, buyer claimed failure'));
+  check('S5 mismatch helper stays silent for a clean failure',
+    mp.mismatchRowHtml({ call_id: 'freeze1011-fail-001', status: 'failed-refunded' }, { 'dishonest-001': { response_hash: '316b7bb3f0fc8f0fa013848d7edf20301745cb18aa8c02ba9df5b9612eeb42b8' } }) === '');
+  {
+    const realFetch = ctx.fetch;
+    ctx.fetch = (url, opts) => {
+      if (typeof url === 'string' && url.endsWith('attestations-seed.jsonl')) return Promise.reject(new Error('seed file absent'));
+      return cannedFetch(url, opts);
+    };
+    mp.loadReplay();
+    await new Promise((r) => setTimeout(r, 200));
+    check('S5 audit still renders with the seed file absent (cross-check off, no break)',
+      els['audit-rows'].innerHTML.includes('freeze1011-fail-001') && !els['audit-rows'].innerHTML.includes('MISMATCH'));
+    check('S5 dishonest cross-check stays empty when the seed file is absent',
+      els['dishonest-crosscheck'].innerHTML === '');
+    ctx.fetch = realFetch;
+  }
 }
 
 if (failures.length) { console.error('VERIFY FAILED: ' + failures.join('; ')); process.exit(1); }

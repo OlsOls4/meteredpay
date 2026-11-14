@@ -21,7 +21,7 @@ yours.
 ## Prerequisites
 
 - Node 24, near-cli-rs 0.30.1, Rust + `cargo near` with the
-  `wasm32-unknown-unknown` target (see README §2.3, `prep/08`).
+  `wasm32-unknown-unknown` target (see README §2.3).
 - A testnet deployer account funded from the faucet (pays testnet
   gas + storage for the deploy; testnet NEAR has no real-world
   value). Its key must be in `~/.near-credentials/testnet/`.
@@ -82,7 +82,10 @@ Gotchas (learned on the frozen deploy): `U128`/`U64` init args MUST
 be JSON strings (`"100000000000000000000000"`, `"600"`), not bare
 numbers. `sign-as` is NOT a valid step in this chain. Record the
 deploy tx hash in full — the frozen deploy's hash was lost to
-truncated CLI output; do not repeat that.
+truncated CLI output; do not repeat that. Choose your price as if it
+were forever — it is; there is no `set_price`. The price is fixed at
+init and can never be changed on this instance; a different price
+needs a new instance.
 
 ## Step 4 — Verify your instance on-chain (gate — do not skip)
 
@@ -122,12 +125,22 @@ in Step 6 instead — a deduction to your seller is the live proof.
 
 ## Step 6 — Prove it end-to-end with a fresh buyer
 
+One copy-pasteable block — fresh buyer FIRST, then the demo against
+YOUR instance. The env vars are inline for a reason: without them
+the buyer defaults to the frozen contract and the builder's seller
+(`buyer/buyer.mjs:94-95`), so the demo would pay the builder's
+seller, not you.
+
 ```bash
+# 1. Fresh buyer first (faucet-funded; replace <fresh-buyer>):
+near account create-account sponsor-by-faucet-service <fresh-buyer>.testnet \
+  autogenerate-new-keypair --signature-scheme ed25519 save-to-legacy-keychain network-config testnet create
+# 2. Demo against YOUR instance (seller on your own port from Step 5):
 cd buyer
-node buyer.mjs --buyer <fresh-buyer>.testnet --mode demo --tag demo
-# With CONTRACT_ID=<your-contract>.testnet SELLER_ACCOUNT_ID=<your-seller>.testnet
-# in the environment. Expected final state: deposit 0.5 / held 0 /
-# spent 0.2 / available 0.3 / cap 0.2, and your seller earned 0.2.
+CONTRACT_ID=<your-contract>.testnet SELLER_ACCOUNT_ID=<your-seller>.testnet \
+  node buyer.mjs --buyer <fresh-buyer>.testnet --mode demo --tag demo --api http://127.0.0.1:8787
+# Expected final state: deposit 0.5 / held 0 / spent 0.2 / available
+# 0.3 / cap 0.2, and your seller earned 0.2.
 # (Or run ./replay.sh against your instance — same flow, one command.)
 ```
 
@@ -148,10 +161,11 @@ export PATH="$HOME/.cargo/bin:$PATH"
 near contract call-function as-transaction <your-contract>.testnet withdraw \
   json-args '{}' prepaid-gas '100.000 TeraGas' attached-deposit '0 NEAR' \
   sign-as <your-seller>.testnet network-config testnet sign-with-keychain send
-# Check the result afterwards (a Promise return carries no JSON value):
-# near contract call-function as-transaction <your-contract>.testnet get_seller_balance \
-#   json-args '{"seller": "<your-seller>.testnet"}' prepaid-gas '100.000 TeraGas' \
-#   attached-deposit '0 NEAR' sign-as <your-seller>.testnet network-config testnet sign-with-keychain send
+# Check the result afterwards (a Promise return carries no JSON value).
+# get_seller_balance takes no arguments — read-only call, json-args '{}'
+# (src/lib.rs:779; the old as-transaction form with a seller arg was wrong):
+near contract call-function as-read-only <your-contract>.testnet get_seller_balance \
+  json-args '{}' network-config testnet now
 ```
 
 Live example (instance B, 13 Nov 2026): seller `mp-seller2.testnet`
@@ -176,3 +190,8 @@ seller wallet received 0.2 testnet NEAR minus ~0.0002 gas.
   `DISHONEST_BUYER_DEMO.md` for a demonstrated case).
 - Unspent buyer deposit has no buyer withdraw in v1 — tell your
   buyers that before they deposit.
+- The seller API has no auth: anyone who can reach it can call it.
+  The contract, not the API, is the trust boundary — but an open
+  endpoint can be spammed or abused for free service. Minimal
+  mitigation before exposing it beyond localhost: put it behind a
+  reverse proxy requiring an API key, or a per-buyer allowlist.

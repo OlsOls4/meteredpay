@@ -67,11 +67,36 @@ verify_only() {
   [ -f "$LOG" ] || { echo "Run log not found: $LOG" >&2; exit 1; }
   if [ -z "$BUYER" ]; then
     # Buyer is the middle segment of demo-<buyer>-<timestamp>.jsonl
-    BUYER="$(basename "$LOG" | sed -E 's/^demo-(.*)-[0-9]{4}-[0-9]{2}-[0-9]{2}T.*\.jsonl$/\1/')"
+    # or replay-<buyer>-<timestamp>.jsonl. If the filename does not
+    # match either shape, the buyer is unidentifiable.
+    BUYER="$(basename "$LOG" | sed -E 's/^(demo|replay)-(.*)-[0-9]{4}-[0-9]{2}-[0-9]{2}T.*\.jsonl$/\2/')"
+    case "$BUYER" in *.testnet) ;; *) BUYER="" ;; esac
   fi
   echo "Verify-only: checking recorded txs in $LOG against $RPC_URL"
-  echo "Buyer (tx signer): $BUYER"
+  echo "Buyer (tx signer): ${BUYER:-<unidentifiable from log filename>}"
   echo "No toolchain install, no new account, no seller needed."
+  # Query one tx's on-chain status. Prints OK, FAILURE, UNKNOWN,
+  # NOT_OBSERVED (tx not seen by this RPC — retry on archival), or
+  # RPC-ERROR. $3 is the RPC URL to query.
+  query_tx_status() {
+    local tx="$1" signer="$2" rpc="$3" resp
+    resp="$(curl -s -m 30 "$rpc" -H 'Content-Type: application/json' \
+      -d "{\"jsonrpc\":\"2.0\",\"id\":\"verify\",\"method\":\"tx\",\"params\":[\"$tx\",\"$signer\"]}")"
+    printf '%s' "$resp" | python3 -c "
+import json,sys
+raw=sys.stdin.read()
+try:
+    r=json.loads(raw)
+except Exception:
+    print('RPC-ERROR'); sys.exit()
+st=r.get('result',{}).get('status',{})
+if 'SuccessValue' in st: print('OK')
+elif 'Failure' in st: print('FAILURE')
+elif 'NOT_OBSERVED' in raw.upper(): print('NOT_OBSERVED')
+elif r.get('error'): print('UNKNOWN')
+else: print('UNKNOWN')"
+  }
+  ARCHIVAL_RPC_URL="https://archival-rpc.testnet.near.org"
   TXS="$(python3 -c "
 import json,sys
 seen=[]
@@ -87,24 +112,49 @@ print('\n'.join(seen))")"
   FAIL=0
   while IFS= read -r TX; do
     [ -n "$TX" ] || continue
-    RESP="$(curl -s -m 15 "$RPC_URL" -H 'Content-Type: application/json' \
-      -d "{\"jsonrpc\":\"2.0\",\"id\":\"verify\",\"method\":\"tx\",\"params\":[\"$TX\",\"$BUYER\"]}")"
-    STATUS="$(printf '%s' "$RESP" | python3 -c "
-import json,sys
-try:
-    r=json.load(sys.stdin)
-    st=r.get('result',{}).get('status',{})
-    print('OK' if 'SuccessValue' in st else ('FAILURE' if 'Failure' in st else 'UNKNOWN'))
-except Exception:
-    print('RPC-ERROR')")"
+    STATUS="$(query_tx_status "$TX" "$BUYER" "$RPC_URL")"
+    if [ "$STATUS" = "NOT_OBSERVED" ] || [ "$STATUS" = "RPC-ERROR" ]; then
+      # Post-submission council (14 Nov 2026): the default RPC prunes
+      # old txs, so a tx the default node never observed is NOT proof
+      # it failed — retry once against the archival RPC before
+      # reporting UNKNOWN/FAIL. (Observed 14 Nov: the default RPC
+      # answers old txs with error cause NOT_OBSERVED / data
+      # "Timeout", and can also time out outright through a slow
+      # egress path — both are retried on archival, never reported
+      # as a tx failure on their own.)
+      echo "  $STATUS on default RPC — retrying archival RPC for $TX"
+      STATUS="$(query_tx_status "$TX" "$BUYER" "$ARCHIVAL_RPC_URL")"
+      [ "$STATUS" = "NOT_OBSERVED" ] && STATUS="UNKNOWN"
+    fi
     echo "  $STATUS  https://testnet.nearblocks.io/txns/$TX"
     [ "$STATUS" = "OK" ] || FAIL=$((FAIL+1))
   done <<EOF
 $TXS
 EOF
   echo "Elapsed: $((SECONDS-START))s"
-  if [ "$FAIL" -eq 0 ]; then echo "VERIFY-ONLY OK: every recorded tx succeeded on-chain."; exit 0; fi
-  echo "VERIFY-ONLY: $FAIL tx(s) did not verify as OK (see above)." >&2; exit 1
+  # Semantic verdict (post-submission council, 14 Nov 2026): txs that
+  # all succeeded can still leave the WRONG final state (e.g. the
+  # seller-down run: every tx succeeded, spent stayed 0). When the
+  # log names a demo/replay run with an identifiable buyer, assert
+  # that buyer's final state too and print the semantic verdict
+  # alongside the tx verdict.
+  MODE_FROM_LOG="$(basename "$LOG" | sed -E -n 's/^(demo|replay)-.*$/\1/p')"
+  FINAL_VERDICT=""
+  if [ -n "$BUYER" ] && [ -n "$MODE_FROM_LOG" ]; then
+    if (cd buyer && node assert-final-state.mjs --buyer "$BUYER" --mode "$MODE_FROM_LOG") 2>/tmp/meteredpay-verify-final-state.err; then
+      FINAL_VERDICT="final state OK"
+    else
+      sed 's/^/  final-state: /' /tmp/meteredpay-verify-final-state.err >&2 || true
+      FINAL_VERDICT="final state MISMATCH — see above (buyer $BUYER)"
+    fi
+  else
+    echo "Note: no identifiable demo/replay buyer in $LOG — skipping final-state check (tx verdict only)."
+    FINAL_VERDICT="final state not checked (no identifiable buyer)"
+  fi
+  rm -f /tmp/meteredpay-verify-final-state.err
+  if [ "$FAIL" -eq 0 ] && [ "$FINAL_VERDICT" = "final state OK" ]; then echo "VERIFY-ONLY OK: every recorded tx succeeded on-chain; $FINAL_VERDICT."; exit 0; fi
+  if [ "$FAIL" -eq 0 ]; then echo "VERIFY-ONLY: txs OK, $FINAL_VERDICT." >&2; exit 1; fi
+  echo "VERIFY-ONLY: $FAIL tx(s) did not verify as OK (see above); $FINAL_VERDICT." >&2; exit 1
 }
 
 # --- arg parsing ------------------------------------------------------------
@@ -167,6 +217,27 @@ fi
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 echo "Node: $(node --version)"
 if [ "$NODE_MAJOR" -lt 24 ]; then echo "Node 24+ required (found $NODE_MAJOR)." >&2; exit 1; fi
+# --- seller-key preflight (post-submission council, 14 Nov 2026) -----------
+# The frozen demo runs the demonstrator seller API with the BUILDER's
+# seller key (tedious-sea.testnet). A stranger on a clean machine does
+# not have it — and must never be asked for it. Fail fast HERE, before
+# the near-cli check, before any account creation, before the seller
+# starts and before the 30 s health poll: installing a toolchain first
+# would only waste the stranger's time. Deliberate ordering: this check
+# sits before the near-cli check for exactly that reason.
+SELLER_KEY_FILE="${SELLER_KEY_PATH:-$HOME/.near-credentials/testnet/tedious-sea.testnet.json}"
+if [ -z "${SELLER_KEY_JSON:-}" ] && [ ! -f "$SELLER_KEY_FILE" ]; then
+  echo "This frozen demo cannot run here: it needs the demonstrator seller's"
+  echo "signing key ($SELLER_KEY_FILE), which belongs to the builder — and"
+  echo "which you correctly do not have. Nothing was started, nothing was"
+  echo "installed, and no account was created."
+  echo ""
+  echo "Run the judge-owned replay instead: it deploys the same frozen"
+  echo "contract code to your own testnet account, with your own seller"
+  echo "key, and needs no builder key at all:"
+  echo "  ./replay-judge-owned.sh"
+  exit 1
+fi
 if ! command -v near >/dev/null; then
   echo "near-cli not found. Install near-cli-rs 0.30.1 first:" >&2
   echo "  cargo install near-cli-rs --version 0.30.1   # needs Rust" >&2
@@ -247,7 +318,7 @@ fi
 # view, so a replay that "completed" with the wrong balances can
 # never print REPLAY OK.
 echo "== Asserting frozen final state (deposit 0.5 / held 0 / spent 0.2 / available 0.3 / cap 0.2) =="
-(cd buyer && node assert-final-state.mjs --buyer "$BUYER") || { echo "Final-state assertion FAILED — this replay did NOT reproduce the frozen final state." >&2; exit 1; }
+(cd buyer && node assert-final-state.mjs --buyer "$BUYER" --mode "$MODE") || { echo "Final-state assertion FAILED — this replay did NOT reproduce the frozen final state." >&2; exit 1; }
 echo "Expected final state: deposit 0.5 / held 0 / spent 0.2 / available 0.3 / cap 0.2 (testnet NEAR)."
 echo "REPLAY OK in ${ELAPSED}s."
 echo ""

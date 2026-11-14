@@ -24,12 +24,15 @@
     <a href="#/s5">Replay</a>
     <a href="#/s6">Two sellers</a>
     <a href="#/s7">Summariser</a>
+    <a href="https://github.com/OlsOls4/meteredpay">Repo</a>
   </nav>
   <div id="live" class="sr-only" aria-live="polite"></div>
 
   <!-- S1 — Landing / Judge start -->
   <section class="view" id="view-s1" aria-label="Judge start">
     <h2>Pay per successful agent call — deducted: zero on a failed call.</h2>
+    <div class="card" aria-label="Why this matters"><p>Why this matters — A buyer agent pays only for a call it verified succeeded. A failed call releases its hold: deducted zero. The open problem, stated up front: v1 protects the buyer, not the seller — a buyer can claim failure after a genuine success and the seller's only defence today is detecting it afterwards (see README §2.7). Next step that would prove this as a market: a hosted seller and one external buyer completing a full run. Submitted 14 Nov 2026 to the NEAR Hackathon (agents, open, business, security, defi); demo video v3.5 and X post linked below.</p></div>
+    <p><a href="#recorded-run">Skip to the recorded run ↓</a></p>
     <p>A buyer prepays testnet NEAR into a contract. A successful call
     deducts 0.1 testnet NEAR. A failed call is released — held amount
     released, never deducted. An over-budget call is refused on-chain.
@@ -43,18 +46,20 @@
     <h3>How this differs — same question, three answers</h3>
     <div class="proof-cards">
       <div class="proof-card"><strong>Spend Guard pays on attempt.</strong><p>Its <span class="mono">spend</span> transfers once the allowlist and caps pass — no check that the call succeeded, no refund if it failed. <a href="https://github.com/mubudot/near-agent-spend-guard#at-a-glance">Spend Guard README, “At a glance”</a> (checked live 13 Nov 2026).</p></div>
-      <div class="proof-card"><strong>x402 settles on the seller's say-so.</strong><p>The seller hands the buyer's signed authorisation to the facilitator, which settles — if the server takes payment and fails to deliver, the buyer has no on-protocol recourse. <a href="https://developers.circle.com/x402-facilitators/x402">Circle x402 docs</a>.</p></div>
+      <div class="proof-card"><strong>x402 settles only after the resource handler succeeds — but capture is not gated on the payer's receipt.</strong><p>x402's authorization flow settles only after the resource handler succeeds, and auth-capture permits a contract to gate capture — but no default/shipped x402 flow gates capture on the payer's verified success receipt. In x402 the capture decision sits with the resource server/facilitator; in MeteredPay it sits with the payer's receipt, on-chain. <a href="https://developers.circle.com/x402-facilitators/x402">Circle x402 docs</a>.</p></div>
       <div class="proof-card"><strong>MeteredPay deducts only on a buyer-verified receipt.</strong><p>The buyer recomputes the response hash, verifies the seller signature, and only then signs — deduction tx <span class="mono">BD3fkPVQ…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/BD3fkPVQNBBPjroxS85y3Bam2GK87TxDKSiFMVehC3Zd">View on testnet explorer</a>.</p></div>
+      <div class="proof-card"><strong>Genesis also pays on outcome — but its pay_job is owner-only.</strong><p>Genesis (same hackathon, checked 14 Nov 2026) also pays on outcome: its job escrow pays only if a verifier passes and the score beats an on-chain frontier. Difference: Genesis's pay_job is owner-only — its own README says the service holding the treasury key decides who gets paid. MeteredPay's success decision is enforced by the contract on the buyer's verified, payer-signed receipt, replayable on-chain; per API call, not per job.</p></div>
     </div>
     <h3>See the 60-second proof — guided, no wallet needed</h3>
-    <p>Four beats, one card at a time: a call that succeeds and deducts,
-    a call that fails and is released, a second success that reaches the
-    cap, and a call the contract refuses. (The timeout beat is optional,
-    after the refusal.) Each card shows the result, the amount, the
+    <p>Five beats, one card at a time: a call that succeeds and deducts,
+    a call that fails and is released, a call that times out and is
+    released, a second success that reaches the cap, and a call the
+    contract refuses. Each card shows the result, the amount, the
     balance after, the explorer transactions, and the receipt. No wallet,
     no setup, nothing is sent from this page — the proof is the recorded
     run below.</p>
     <p><button type="button" id="guided-start">See the 60-second proof</button></p>
+    <p>Prefer video? Watch the 1:27 demo: <a href="https://youtu.be/1JB0lV-sPRA">YouTube</a> · <a href="https://x.com/OlsOls4/status/2121657509085647308">X post</a></p>
     <div id="guided" aria-live="polite"></div>
     <p><strong>What is sold:</strong> the seller is a JSON
     schema-validation service (<span class="mono">meteredpay-schema-validate</span>) —
@@ -85,9 +90,9 @@
     <p><strong>Output</strong> <code>valid:true, word_count:12, char_count:92</code> · <strong>Response hash</strong> <span class="mono">58aa417c…19b65be</span> <button type="button" class="secondary" data-copy="58aa417c4bd47cec7d786f9381fb8a54aeb08585933b06f692afe2fab19b65be">Copy</button></p>
     <h3>What failed calls would cost at scale — illustrative only</h3>
     <p>An agent making 1,000 paid calls a day with 1 in 10 failing pays for 100 failures a day — at an illustrative £0.01 per call that is <strong>£365 a year</strong> for work that never happened. <span class="small">Illustrative only — no real usage data.</span></p>
-    <p class="small">Try it: <label for="stakes-calls">Calls per day</label> <input type="text" id="stakes-calls" value="1000" inputmode="numeric"> <label for="stakes-rate">Fail rate (%)</label> <input type="text" id="stakes-rate" value="10" inputmode="decimal"> <label for="stakes-price">Price per call (£)</label> <input type="text" id="stakes-price" value="0.01" inputmode="decimal"></p>
+    <p class="small">Try it: <label for="stakes-calls">Calls per day</label> <input type="number" id="stakes-calls" value="1000" min="0" max="1000000" step="1"> <label for="stakes-rate">Fail rate (%)</label> <input type="number" id="stakes-rate" value="10" min="0" max="100" step="0.1"> <label for="stakes-price">Price per call (£)</label> <input type="number" id="stakes-price" value="0.01" min="0" max="100" step="0.01"></p>
     <p id="stakes-result" aria-live="polite">Illustrative only — no real usage data.</p>
-    <h3>Recorded demo run</h3>
+    <h3 id="recorded-run">Recorded demo run</h3>
     <p id="playback-note" aria-live="polite">Recorded demo run — replay it live on S5.</p>
     <div class="table-wrap"><table>
       <caption class="small">Canonical replay — freeze1011 run, schema-validation service, 5 Nov 2026 21:06 UTC. Machine-readable manifest: <span class="mono">dashboard/frozen-run.json</span>.</caption>
@@ -119,6 +124,7 @@
     <input type="text" id="buyer-account" value="freeze1011-buyer.testnet" autocomplete="off" spellcheck="false">
     <p><button type="button" id="buyer-load">Load balance &amp; call history</button></p>
     <p class="small">Deep link: <code>#/s2?buyer=&lt;buyer&gt;.testnet</code> prefills the account and loads it — e.g. <code>#/s2?buyer=freeze1011-buyer.testnet</code>.</p>
+    <p class="small">Unspent deposit cannot be withdrawn in v1 — only deposit what you plan to spend.</p>
     <div id="buyer-result" aria-live="polite">
       <p>Load a buyer to see the five-number balance and call history.</p>
     </div>
@@ -160,8 +166,10 @@
     <p><button type="button" id="seller-load">Load seller call log</button></p>
     <p class="small">Defaults to the recorded demo buyer. Enter any buyer — e.g. your own replay buyer — to see their calls here.</p>
     <p class="small">Demonstrator seller API: local only (<span class="mono">127.0.0.1:8787</span>) — not hosted; it ran for the recorded runs and is stopped now. Contract state below is live.</p>
-    <p><button type="button" id="seller-health-btn" class="secondary">Check seller on this machine</button></p>
-    <div id="seller-health" aria-live="polite"></div>
+    <p>Demonstrator seller stopped after the recorded runs; use the recorded run on S1 or replay from the README.</p>
+    <div class="card" aria-label="Seller on-ramp">
+      <p><strong>Sell with MeteredPay:</strong> <a href="./../SELLER_ONBOARDING.md">Seller onboarding (SELLER_ONBOARDING.md)</a> — register, run the seller API, and get paid per verified success. Withdraw: the registered seller calls <code>withdraw()</code> with no arguments — see SELLER_ONBOARDING.md Step 7 (proven live on instance B, 13 Nov 2026). Honest limit: buyer dishonesty is NOT solved — a buyer can claim failure after a genuine success, and the seller's only defence today is detecting it afterwards (see the dishonest-buyer demonstration on S5).</p>
+    </div>
     <div id="seller-result" aria-live="polite"></div>
     <div id="seller-claims" aria-live="polite"></div>
   </section>
@@ -199,7 +207,7 @@
       <thead><tr><th>Test</th><th>What happened</th><th>Explorer</th></tr></thead>
       <tbody>
         <tr><td>Test 5 — backstop, after deadline</td><td>Third party (buyer B) <span class="mono">expire_call</span> → <span class="mono">timeout-refunded</span>; held 0.1 → 0, spent unchanged.</td><td><span class="mono">7C72vYNf…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/7C72vYNfthZJpCiQXN7dHwYDu1UriNWQJaikfHkXX5CE" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
-        <tr><td>Test 5 — backstop, before deadline</td><td>Expire before the 600 s deadline → rejected <code>Call has not expired yet</code>; call stayed <span class="mono">paid</span>. No tx hash recorded in BUILD_NOTES.md — the rejection is recorded in prose only, not linked.</td><td>—</td></tr>
+        <tr><td>Test 5 — backstop, before deadline</td><td>Expire before the 600 s deadline → rejected <code>Call has not expired yet</code>; call stayed <span class="mono">paid</span>. Prose only, no tx — not independently verifiable. No tx hash recorded in BUILD_NOTES.md — the rejection is recorded in prose only, not linked.</td><td>—</td></tr>
         <tr><td>Tamper — <span class="mono">tamper-single-001</span></td><td>Bad seller response → buyer recomputed the hash, verified the seller signature locally, claimed <code>invalid_response</code> → hold released, spent 0.</td><td><span class="mono">8W7EQs94…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/8W7EQs94SoFk9JvvYaJ2nvewqRDq2NNYWbaSwNtu5DxS" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
         <tr><td>Tamper — <span class="mono">tamper05-single-2026-11-05T22-43-56-9jx7t9</span></td><td>Bad seller response → buyer claimed <code>invalid_response</code> → hold released, spent 0.</td><td><span class="mono">7rEaW3An…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/7rEaW3AntDRHynYDxi1JWiTDCtyzM4VYyMYC4d5PgGU7" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
         <tr><td>Tamper — <span class="mono">tamper-single-2026-11-05T22-23-52-6g85dd</span></td><td>Bad seller response → buyer claimed <code>invalid_response</code> → hold released, spent 0.</td><td><span class="mono">HU4Shwfi…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/HU4Shwfico9Uz3yiuZxR4qRnRnmjWR5Q3wAKEAckasSV" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
@@ -207,13 +215,14 @@
         <tr><td>Dishonest-buyer demonstration — <span class="mono">dishonest-001</span></td><td>Deliberate cheat, 8 Nov 2026: the seller served a genuine signed success (response hash <span class="mono">316b7bb3…eb42b8</span>, signature verified off-chain against the registered seller key), and the buyer claimed failure instead — hold released, seller earned nothing. Detectable only by comparing the seller's retained attestation with the on-chain record. Buyer dishonesty is NOT solved.</td><td><span class="mono">6VDzYRot…Xfd8wB</span> <a class="hash" href="https://testnet.nearblocks.io/txns/6VDzYRot7ZnhKcaR6EZGi3M4f5dPtBy7X6eZNYXfd8wB" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
       </tbody>
     </table></div>
-    <h3>Dispute audit — seller attestation vs buyer claim vs outcome</h3>
+    <p class="small" id="dishonest-crosscheck" aria-live="polite"></p>
+    <h3>Dispute audit — seller attestation vs buyer claim vs outcome (off-chain comparison only — the contract stores nothing for failure claims)</h3>
     <p class="small"><strong>Detects, does not prevent.</strong> The contract
     stores the seller-attested response hash only for success claims;
     for failure/timeout claims it stores no seller attestation
     (response hash is null on-chain — the frozen contract has no field
     for it). The seller error attestation for the recorded fail call
-    is shown on S3 from the run log, not from the contract. This table
+    is shown on S3 from the run log, not from the contract. Gap: the canonical fail call's seller error attestation hash is not recorded in the run log — the hash itself is missing, only the error text survives (see S3). This table
     shows whether attestation and claim agree. It cannot stop a buyer
     claiming failure after a genuine success — buyer dishonesty is NOT solved.</p>
     <p class="small" id="audit-buyer-label"></p>
@@ -265,7 +274,7 @@
     <p class="small">Seller <span class="mono">mp-seller2.testnet</span> · seller public key <span class="mono">ed25519:BoVrSvynnQ9Y1bKszwQaBhGA6DiKefwVtNy7KGfDSNze</span> · price 0.1 testnet NEAR per successful call · timeout 600 s · seller API (local, run 6 Nov) <span class="mono">127.0.0.1:8788</span> · buyer <span class="mono">mp-l1b-buyer.testnet</span>.</p>
     <p class="small">First deduction this seller ever earned — the seller was previously registered nowhere.</p>
     <div class="table-wrap"><table>
-    <caption class="small">Test 19 re-run — 11 steps, 6 Nov 2026. Final on-chain state (deposit / held / spent / available / cap): <strong>0.5 / 0 / 0.2 / 0.3 / 0.2</strong>. Seller earned 0, withdrawn 0.2 testnet NEAR as of 13 Nov 2026 (the 0.2 earned in this 6 Nov run was withdrawn 13 Nov 2026).</caption>
+    <caption class="small">Test 19 re-run — 11 steps, 6 Nov 2026. Final on-chain state (deposit / held / spent / available / cap): <strong>0.5 / 0 / 0.2 / 0.3 / 0.2</strong>. Seller earned 0.2 in total, withdrawn 0.2 (current earned balance 0) testnet NEAR as of 13 Nov 2026 (the 0.2 earned in this 6 Nov run was withdrawn 13 Nov 2026).</caption>
     <thead><tr><th>Step</th><th>Transaction (explorer)</th></tr></thead><tbody>
     <tr><td>Deposit 0.5</td><td><span class="mono">4LbEVG1X…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/4LbEVG1XvoeKUT77GtY7MqikCRZAV5pKtH3epzdYspeZ" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
     <tr><td>Cap 0.2</td><td><span class="mono">GeZT3VGa…</span> <a class="hash" href="https://testnet.nearblocks.io/txns/GeZT3VGa4PQMgdA16RkkzAP8dUQp8U4NNEuHuD8FaCVh" target="_blank" rel="noopener">View on testnet explorer</a></td></tr>
@@ -348,8 +357,8 @@
   <span class="mono">tedious-sea.testnet</span>, price 0.1 testnet NEAR per
   successful call. The demo seller is a demonstrator service; no
   independent seller has run against this (frozen) contract. Buyer dishonesty is
-  NOT solved. See <a href="./../GLOSSARY.md">GLOSSARY.md</a> and the
-  <a href="./../README.md">README</a>.</p>
+  NOT solved. See <a href="./../GLOSSARY.md">Glossary (frozen wording)</a> and the
+  <a href="./../README.md">README (replay instructions)</a>.</p>
 </footer>
 <script src="./config.js"></script>
 <script src="./app.js"></script>
