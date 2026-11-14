@@ -1,0 +1,83 @@
+{
+ "file": "take-i-caps.mp3",
+ "duration": 5.952,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 5.26,
+   "text": "Second good check, check the same way that's point two spent, the limit reached."
+  }
+ ],
+ "words": [
+  {
+   "w": "Second",
+   "s": 0.0,
+   "e": 0.82
+  },
+  {
+   "w": "good",
+   "s": 0.82,
+   "e": 1.12
+  },
+  {
+   "w": "check,",
+   "s": 1.12,
+   "e": 1.44
+  },
+  {
+   "w": "check",
+   "s": 1.8,
+   "e": 1.82
+  },
+  {
+   "w": "the",
+   "s": 1.82,
+   "e": 2.12
+  },
+  {
+   "w": "same",
+   "s": 2.12,
+   "e": 2.36
+  },
+  {
+   "w": "way",
+   "s": 2.36,
+   "e": 2.56
+  },
+  {
+   "w": "that's",
+   "s": 2.56,
+   "e": 2.8
+  },
+  {
+   "w": "point",
+   "s": 2.8,
+   "e": 3.02
+  },
+  {
+   "w": "two",
+   "s": 3.02,
+   "e": 3.26
+  },
+  {
+   "w": "spent,",
+   "s": 3.26,
+   "e": 3.7
+  },
+  {
+   "w": "the",
+   "s": 4.1,
+   "e": 4.22
+  },
+  {
+   "w": "limit",
+   "s": 4.22,
+   "e": 4.52
+  },
+  {
+   "w": "reached.",
+   "s": 4.52,
+   "e": 5.26
+  }
+ ]
+}

@@ -1,0 +1,98 @@
+{
+ "file": "take-j-lower-cut.mp3",
+ "duration": 7.608,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 6.74,
+   "text": "One more call and the contract says no before any money moves, overbudget refused on the record."
+  }
+ ],
+ "words": [
+  {
+   "w": "One",
+   "s": 0.0,
+   "e": 0.52
+  },
+  {
+   "w": "more",
+   "s": 0.52,
+   "e": 0.74
+  },
+  {
+   "w": "call",
+   "s": 0.74,
+   "e": 1.18
+  },
+  {
+   "w": "and",
+   "s": 1.18,
+   "e": 1.58
+  },
+  {
+   "w": "the",
+   "s": 1.58,
+   "e": 1.78
+  },
+  {
+   "w": "contract",
+   "s": 1.78,
+   "e": 2.06
+  },
+  {
+   "w": "says",
+   "s": 2.06,
+   "e": 2.38
+  },
+  {
+   "w": "no",
+   "s": 2.38,
+   "e": 2.7
+  },
+  {
+   "w": "before",
+   "s": 2.7,
+   "e": 3.04
+  },
+  {
+   "w": "any",
+   "s": 3.04,
+   "e": 3.34
+  },
+  {
+   "w": "money",
+   "s": 3.34,
+   "e": 3.6
+  },
+  {
+   "w": "moves,",
+   "s": 3.6,
+   "e": 4.12
+  },
+  {
+   "w": "overbudget",
+   "s": 4.68,
+   "e": 5.28
+  },
+  {
+   "w": "refused",
+   "s": 5.28,
+   "e": 5.82
+  },
+  {
+   "w": "on",
+   "s": 5.82,
+   "e": 6.28
+  },
+  {
+   "w": "the",
+   "s": 6.28,
+   "e": 6.36
+  },
+  {
+   "w": "record.",
+   "s": 6.36,
+   "e": 6.74
+  }
+ ]
+}

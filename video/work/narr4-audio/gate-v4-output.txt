@@ -1,0 +1,19 @@
+PASS final duration ~87.34 s — 87.34s
+PASS final size sane (< 5 MB) — 1128605 B
+PASS final is MP3 — mp3
+PASS decoded PCM ~= container (no phantom word) — PCM 87.340s vs container 87.340s
+PASS integrated loudness ~-25 LUFS — I=-24.99 LUFS
+PASS last-speech-second RMS non-zero — RMS=0.03870 at 85.84-86.84s
+PASS silence share well below v3.4 (29.88 s / 29.9%) — 19.48s in 42 segments = 22.3% of 87.34s (v3.4: 29.88s/29.9%)
+PASS src/lib.rs diff = 0 lines — clean
+INFO finished audio: 258 whisper tokens, speech span 86.76s, overall 175.7 wpm (speech), median gap 0.38s (n=49, total=19.32s)
+INFO take first-word times in finished audio: [0.0, 14.78, 19.66, 41.46, 61.88, 67.2, 73.32]
+PASS Whisper tiny on finished audio: all 38 sentences present — 38/38 sentences; failures: []
+INFO Whisper tiny hears 'Checked' in finished audio @~62.5s: no — Second good check, check the same way that's point two spent, the
+INFO Whisper small hears 'Checked' in finished audio @~62.5s: yes — second good check checked the same way that's point two spent the
+PASS finished 'Checked' segment correlates with source take (>0.90) — corr=1.000 over 3.0 s speech window
+PASS 'Checked' /t/ present in finished audio (small hears it + corr) — small=yes, tiny=no (known ASR artifact), corr=1.000
+PASS Whisper small on finished audio: all 38 sentences present — 38/38 sentences; failures: []
+INFO small transcript (255 tokens): This is metered pay on Testnet, agents pay for every call, even the ones that fail, say 1 in 10 fails. That's money paid for work that never happened. Metered pay only pays when the work checks out. Watch what happens when a call fails. Watch this verse. A call fails and the held money comes straight back, deducted 0. The buyer puts down half a near and caps spending at 0 .2. It can never spend past it. One document to check. The seller validates it against a schema. 12 words, 89 characters, valid. Against a schema, first call. The check comes. Back valid. The buyer checks the receipt. Same fingerprint, real signature. Only then does the contract take 0 .1. Now a call fails, the seller says so itself. Erano signed. The buyer files the claim and the held 0 .1 comes back. Held, never taken, deducted 0. No answer in 30 seconds. The buyer's wait. The contract gives 600, same deal. The money comes back, then someone fiddles with the receipt. One letter changed. The buyer catches it and pays nothing. Second good check, checked. The same way that's 0 .2 spent. The limit, reached. One more call and the contract says no before any money moves. Over budget, refused on the record. 1. Honest limit. This protects the buyer, not the seller. A dishonest buyer could still claim a failure. The buyer checks every receipt. The contract only pays on one the buyer has signed. Meeted pay, failed call, deducted, 0.
+
+GATE: 12 pass, 0 fail

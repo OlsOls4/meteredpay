@@ -1,0 +1,88 @@
+{
+ "file": "take-b.mp3",
+ "duration": 5.784,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 5.18,
+   "text": "Watch this first, a cool fails, and the whole money comes straight back, deducted zero."
+  }
+ ],
+ "words": [
+  {
+   "w": "Watch",
+   "s": 0.0,
+   "e": 0.5
+  },
+  {
+   "w": "this",
+   "s": 0.5,
+   "e": 0.74
+  },
+  {
+   "w": "first,",
+   "s": 0.74,
+   "e": 1.0
+  },
+  {
+   "w": "a",
+   "s": 1.14,
+   "e": 1.26
+  },
+  {
+   "w": "cool",
+   "s": 1.26,
+   "e": 1.46
+  },
+  {
+   "w": "fails,",
+   "s": 1.46,
+   "e": 1.88
+  },
+  {
+   "w": "and",
+   "s": 2.58,
+   "e": 2.64
+  },
+  {
+   "w": "the",
+   "s": 2.64,
+   "e": 2.74
+  },
+  {
+   "w": "whole",
+   "s": 2.74,
+   "e": 2.86
+  },
+  {
+   "w": "money",
+   "s": 2.86,
+   "e": 3.0
+  },
+  {
+   "w": "comes",
+   "s": 3.0,
+   "e": 3.18
+  },
+  {
+   "w": "straight",
+   "s": 3.18,
+   "e": 3.4
+  },
+  {
+   "w": "back,",
+   "s": 3.4,
+   "e": 3.94
+  },
+  {
+   "w": "deducted",
+   "s": 4.24,
+   "e": 4.88
+  },
+  {
+   "w": "zero.",
+   "s": 4.88,
+   "e": 5.18
+  }
+ ]
+}

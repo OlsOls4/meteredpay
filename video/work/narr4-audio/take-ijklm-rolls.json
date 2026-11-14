@@ -1,0 +1,14 @@
+{
+ "take": "ijklm",
+ "voice": "avocado_v2:paloma",
+ "speed": 100,
+ "rolls": [
+  {
+   "roll": 1,
+   "file": "take-ijklm-s100-r1.mp3",
+   "gate_line": "/home/hatch/workspace/near-meteredpay/repo/video/work/narr4-audio/take-ijklm-s100-r1.mp3: span=34.24s wpm=126.2 FAIL | gap_med=0.60s (n=17, total=9.90s) FAIL | F0 med=158 std=19 PASS => FAIL",
+   "passed": false
+  }
+ ],
+ "chosen": null
+}

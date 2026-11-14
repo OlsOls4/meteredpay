@@ -1,0 +1,26 @@
+{
+ "take": "a",
+ "voice": "avocado_v2:paloma",
+ "speed": 100,
+ "rolls": [
+  {
+   "roll": 1,
+   "file": "take-a-s100-r1.mp3",
+   "gate_line": "/home/hatch/workspace/near-meteredpay/repo/video/work/narr3-v34/take-a-s100-r1.mp3: span=15.30s wpm=168.6 PASS | gap_med=0.52s (n=6, total=3.12s) FAIL | F0 med=207 std=53 PASS => FAIL",
+   "passed": false
+  },
+  {
+   "roll": 2,
+   "file": "take-a-s100-r2.mp3",
+   "gate_line": "/home/hatch/workspace/near-meteredpay/repo/video/work/narr3-v34/take-a-s100-r2.mp3: span=15.30s wpm=168.6 PASS | gap_med=0.52s (n=6, total=3.12s) FAIL | F0 med=207 std=53 PASS => FAIL",
+   "passed": false
+  },
+  {
+   "roll": 3,
+   "file": "take-a-s100-r3.mp3",
+   "gate_line": "/home/hatch/workspace/near-meteredpay/repo/video/work/narr3-v34/take-a-s100-r3.mp3: span=15.30s wpm=168.6 PASS | gap_med=0.52s (n=6, total=3.12s) FAIL | F0 med=207 std=53 PASS => FAIL",
+   "passed": false
+  }
+ ],
+ "chosen": null
+}

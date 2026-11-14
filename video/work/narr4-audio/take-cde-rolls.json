@@ -1,0 +1,14 @@
+{
+ "take": "cde",
+ "voice": "avocado_v2:paloma",
+ "speed": 100,
+ "rolls": [
+  {
+   "roll": 1,
+   "file": "take-cde-s100-r1.mp3",
+   "gate_line": "/home/hatch/workspace/near-meteredpay/repo/video/work/narr4-audio/take-cde-s100-r1.mp3: span=21.50s wpm=173.0 PASS | gap_med=0.40s (n=14, total=6.04s) PASS | F0 med=155 std=22 PASS => PASS",
+   "passed": true
+  }
+ ],
+ "chosen": "take-cde-s100-r1.mp3"
+}

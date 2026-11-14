@@ -1,0 +1,228 @@
+{
+ "voice": "avocado_v2:paloma",
+ "speed": 100,
+ "takes": {
+  "intro-s100.mp3": {
+   "shots": "A",
+   "start": 0.0
+  },
+  "take-b-s100.mp3": {
+   "shots": "B",
+   "start": 15.96
+  },
+  "take-cde-v6.mp3": {
+   "shots": "CDE",
+   "start": 23.48
+  },
+  "take-fgh-v3.mp3": {
+   "shots": "FGH",
+   "start": 43.74
+  },
+  "take-ijklm-v6.mp3": {
+   "shots": "IJKLM",
+   "start": 68.36
+  }
+ },
+ "sentences": {
+  "intro-s100.mp3": [
+   {
+    "text": "This is MeteredPay, on testnet.",
+    "start": 0.0,
+    "end": 2.42
+   },
+   {
+    "text": "Agents pay for every call \u2014 even the ones that fail.",
+    "start": 2.68,
+    "end": 5.82
+   },
+   {
+    "text": "Say one in ten fails: that's money paid for work that never happened.",
+    "start": 5.9,
+    "end": 9.16
+   },
+   {
+    "text": "MeteredPay only pays when the work checks out.",
+    "start": 9.64,
+    "end": 12.06
+   },
+   {
+    "text": "Watch what happens when a call fails.",
+    "start": 12.4,
+    "end": 13.96
+   }
+  ],
+  "take-b-s100.mp3": [
+   {
+    "text": "Watch this first.",
+    "start": 0.0,
+    "end": 1.12
+   },
+   {
+    "text": "A call fails \u2014 and the held money comes straight back.",
+    "start": 1.52,
+    "end": 4.14
+   },
+   {
+    "text": "Deducted: zero.",
+    "start": 4.46,
+    "end": 5.52
+   }
+  ],
+  "take-cde-v6.mp3": [
+   {
+    "text": "The buyer puts down half a NEAR, and caps spending at point two.",
+    "start": 0.0,
+    "end": 2.98
+   },
+   {
+    "text": "It can never spend past it.",
+    "start": 3.12,
+    "end": 4.44
+   },
+   {
+    "text": "One document to check.",
+    "start": 4.8,
+    "end": 5.68
+   },
+   {
+    "text": "The seller validates it against a schema \u2014 twelve words, eighty-nine characters.",
+    "start": 5.68,
+    "end": 9.14
+   },
+   {
+    "text": "Valid \u2014 against the schema.",
+    "start": 9.14,
+    "end": 10.56
+   },
+   {
+    "text": "First call.",
+    "start": 11.14,
+    "end": 11.64
+   },
+   {
+    "text": "The check comes back valid.",
+    "start": 11.64,
+    "end": 12.98
+   },
+   {
+    "text": "The buyer checks the receipt \u2014 same fingerprint, real signature.",
+    "start": 13.18,
+    "end": 16.14
+   },
+   {
+    "text": "Only then does the contract take point one.",
+    "start": 16.46,
+    "end": 18.26
+   }
+  ],
+  "take-fgh-v3.mp3": [
+   {
+    "text": "Now a call fails.",
+    "start": 0.0,
+    "end": 1.1
+   },
+   {
+    "text": "The seller says so itself \u2014 error note, signed.",
+    "start": 1.34,
+    "end": 4.08
+   },
+   {
+    "text": "The buyer files the claim, and the held point one comes back.",
+    "start": 4.62,
+    "end": 7.4
+   },
+   {
+    "text": "Held, never taken.",
+    "start": 7.88,
+    "end": 8.88
+   },
+   {
+    "text": "Deducted: zero.",
+    "start": 9.18,
+    "end": 10.48
+   },
+   {
+    "text": "No answer in thirty seconds?",
+    "start": 11.04,
+    "end": 12.5
+   },
+   {
+    "text": "The buyer's wait \u2014 the contract gives six hundred.",
+    "start": 12.78,
+    "end": 14.84
+   },
+   {
+    "text": "Same deal: the money comes back.",
+    "start": 15.62,
+    "end": 17.26
+   },
+   {
+    "text": "Then someone fiddles with a receipt \u2014 one letter changed.",
+    "start": 17.54,
+    "end": 20.26
+   },
+   {
+    "text": "The buyer catches it, and pays nothing.",
+    "start": 20.74,
+    "end": 22.62
+   }
+  ],
+  "take-ijklm-v6.mp3": [
+   {
+    "text": "Second good check.",
+    "start": 0.0,
+    "end": 1.34
+   },
+   {
+    "text": "Checked.",
+    "start": 1.86,
+    "end": 2.24
+   },
+   {
+    "text": "The same way \u2014 that's point two spent.",
+    "start": 2.24,
+    "end": 3.98
+   },
+   {
+    "text": "The limit, reached.",
+    "start": 4.6,
+    "end": 5.78
+   },
+   {
+    "text": "One more call \u2014 and the contract says no before any money moves.",
+    "start": 6.32,
+    "end": 9.38
+   },
+   {
+    "text": "Over budget, refused, on the record.",
+    "start": 10.2,
+    "end": 13.0
+   },
+   {
+    "text": "One honest limit: this protects the buyer, not the seller.",
+    "start": 13.64,
+    "end": 16.56
+   },
+   {
+    "text": "A dishonest buyer could still claim a failure.",
+    "start": 17.28,
+    "end": 19.52
+   },
+   {
+    "text": "The buyer checks every receipt.",
+    "start": 20.22,
+    "end": 21.72
+   },
+   {
+    "text": "The contract only pays on one the buyer has signed.",
+    "start": 22.22,
+    "end": 24.68
+   },
+   {
+    "text": "MeteredPay. Failed call? Deducted: zero.",
+    "start": 24.68,
+    "end": 30.16
+   }
+  ]
+ }
+}

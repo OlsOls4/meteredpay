@@ -1,0 +1,14 @@
+{
+ "take": "a",
+ "voice": "avocado_v2:paloma",
+ "speed": 100,
+ "rolls": [
+  {
+   "roll": 1,
+   "file": "take-a-s100-r1.mp3",
+   "gate_line": "/home/hatch/workspace/near-meteredpay/repo/video/work/narr4-audio/take-a-s100-r1.mp3: span=14.26s wpm=180.9 PASS | gap_med=0.40s (n=6, total=2.60s) PASS | F0 med=165 std=25 PASS => PASS",
+   "passed": true
+  }
+ ],
+ "chosen": "take-a-s100-r1.mp3"
+}

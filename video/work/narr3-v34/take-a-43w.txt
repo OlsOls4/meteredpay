@@ -1,0 +1,1 @@
+This is Metered Pay, on testnet. Agents pay for every call — even the ones that fail. Say one in ten fails: that's money paid for work that never happened. Metered Pay only pays when the work checks out. Watch what happens when a call fails.

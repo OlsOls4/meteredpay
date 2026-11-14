@@ -1,0 +1,1 @@
+The buyer puts down half a NEAR, and caps spending at point two. It can never spend past it. One document to check. The seller validates it against a schema — twelve words, eighty-nine characters. Valid — against the schema. First call. The check comes back valid. The buyer checks the receipt — same fingerprint, real signature. Only then does the contract take point one.

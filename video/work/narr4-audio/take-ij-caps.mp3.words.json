@@ -1,0 +1,183 @@
+{
+ "file": "take-ij-caps.mp3",
+ "duration": 15.312,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 6.9,
+   "text": "Second good check, check the same way that's point two spent, the limit reached, one more call,"
+  },
+  {
+   "start": 7.42,
+   "end": 14.76,
+   "text": "and the contract says no before any money moves. Overbudget, refused, on the record, balanced untouched."
+  }
+ ],
+ "words": [
+  {
+   "w": "Second",
+   "s": 0.0,
+   "e": 0.56
+  },
+  {
+   "w": "good",
+   "s": 0.56,
+   "e": 0.88
+  },
+  {
+   "w": "check,",
+   "s": 0.88,
+   "e": 1.32
+  },
+  {
+   "w": "check",
+   "s": 1.78,
+   "e": 1.78
+  },
+  {
+   "w": "the",
+   "s": 1.78,
+   "e": 2.22
+  },
+  {
+   "w": "same",
+   "s": 2.22,
+   "e": 2.42
+  },
+  {
+   "w": "way",
+   "s": 2.42,
+   "e": 2.62
+  },
+  {
+   "w": "that's",
+   "s": 2.62,
+   "e": 2.84
+  },
+  {
+   "w": "point",
+   "s": 2.84,
+   "e": 3.0
+  },
+  {
+   "w": "two",
+   "s": 3.0,
+   "e": 3.2
+  },
+  {
+   "w": "spent,",
+   "s": 3.2,
+   "e": 3.62
+  },
+  {
+   "w": "the",
+   "s": 4.04,
+   "e": 4.16
+  },
+  {
+   "w": "limit",
+   "s": 4.16,
+   "e": 4.46
+  },
+  {
+   "w": "reached,",
+   "s": 4.46,
+   "e": 5.32
+  },
+  {
+   "w": "one",
+   "s": 6.04,
+   "e": 6.16
+  },
+  {
+   "w": "more",
+   "s": 6.16,
+   "e": 6.38
+  },
+  {
+   "w": "call,",
+   "s": 6.38,
+   "e": 6.9
+  },
+  {
+   "w": "and",
+   "s": 7.42,
+   "e": 7.48
+  },
+  {
+   "w": "the",
+   "s": 7.48,
+   "e": 7.66
+  },
+  {
+   "w": "contract",
+   "s": 7.66,
+   "e": 7.84
+  },
+  {
+   "w": "says",
+   "s": 7.84,
+   "e": 8.12
+  },
+  {
+   "w": "no",
+   "s": 8.12,
+   "e": 8.32
+  },
+  {
+   "w": "before",
+   "s": 8.32,
+   "e": 8.54
+  },
+  {
+   "w": "any",
+   "s": 8.54,
+   "e": 8.78
+  },
+  {
+   "w": "money",
+   "s": 8.78,
+   "e": 8.98
+  },
+  {
+   "w": "moves.",
+   "s": 8.98,
+   "e": 9.42
+  },
+  {
+   "w": "Overbudget,",
+   "s": 10.38,
+   "e": 10.98
+  },
+  {
+   "w": "refused,",
+   "s": 11.66,
+   "e": 12.0
+  },
+  {
+   "w": "on",
+   "s": 12.8,
+   "e": 12.9
+  },
+  {
+   "w": "the",
+   "s": 12.9,
+   "e": 13.04
+  },
+  {
+   "w": "record,",
+   "s": 13.04,
+   "e": 13.34
+  },
+  {
+   "w": "balanced",
+   "s": 14.14,
+   "e": 14.28
+  },
+  {
+   "w": "untouched.",
+   "s": 14.28,
+   "e": 14.76
+  }
+ ]
+}

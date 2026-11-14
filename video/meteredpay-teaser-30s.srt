@@ -1,32 +1,36 @@
 1
-00:00:00,000 --> 00:00:02,640
+00:00:00,000 --> 00:00:02,900
 This is MeteredPay, on testnet.
 
 2
-00:00:02,980 --> 00:00:06,200
+00:00:03,300 --> 00:00:06,080
 Agents pay for every call — even the ones that fail.
 
 3
-00:00:06,200 --> 00:00:07,540
+00:00:06,200 --> 00:00:07,160
 Watch this first.
 
 4
-00:00:07,860 --> 00:00:11,160
+00:00:07,280 --> 00:00:09,860
 A call fails — and the held money comes straight back.
 
 5
-00:00:11,660 --> 00:00:12,700
+00:00:09,900 --> 00:00:10,860
 Deducted: zero.
 
 6
-00:00:14,200 --> 00:00:18,340
+00:00:12,200 --> 00:00:15,120
 The buyer checks the receipt — same fingerprint, real signature.
 
 7
-00:00:19,260 --> 00:00:21,460
+00:00:15,760 --> 00:00:17,600
 Only then does the contract take point one.
 
 8
-00:00:22,200 --> 00:00:25,800
+00:00:19,300 --> 00:00:22,660
 One more call — and the contract says no before any money moves.
+
+9
+00:00:22,660 --> 00:00:24,940
+Over budget, refused, on the record.
 

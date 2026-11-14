@@ -1,0 +1,14 @@
+{
+ "take": "fgh",
+ "voice": "avocado_v2:paloma",
+ "speed": 100,
+ "rolls": [
+  {
+   "roll": 1,
+   "file": "take-fgh-s100-r1.mp3",
+   "gate_line": "/home/hatch/workspace/near-meteredpay/repo/video/work/narr4-audio/take-fgh-s100-r1.mp3: span=27.12s wpm=141.6 FAIL | gap_med=0.52s (n=15, total=8.32s) FAIL | F0 med=184 std=32 PASS => FAIL",
+   "passed": false
+  }
+ ],
+ "chosen": null
+}

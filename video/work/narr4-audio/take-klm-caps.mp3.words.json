@@ -1,0 +1,228 @@
+{
+ "file": "take-klm-caps.mp3",
+ "duration": 15.0,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 3.64,
+   "text": "One, honest limit, this protects the buyer not the seller."
+  },
+  {
+   "start": 4.08,
+   "end": 5.96,
+   "text": "A dishonest buyer could still claim a failure."
+  },
+  {
+   "start": 6.36,
+   "end": 7.78,
+   "text": "The buyer checks every receipt."
+  },
+  {
+   "start": 8.2,
+   "end": 10.38,
+   "text": "The contract only pays on one the buyer has signed."
+  },
+  {
+   "start": 10.94,
+   "end": 14.16,
+   "text": "Meeted pay, failed call, deducted, zero."
+  }
+ ],
+ "words": [
+  {
+   "w": "One,",
+   "s": 0.0,
+   "e": 0.82
+  },
+  {
+   "w": "honest",
+   "s": 1.18,
+   "e": 1.4
+  },
+  {
+   "w": "limit,",
+   "s": 1.4,
+   "e": 1.74
+  },
+  {
+   "w": "this",
+   "s": 2.14,
+   "e": 2.3
+  },
+  {
+   "w": "protects",
+   "s": 2.3,
+   "e": 2.6
+  },
+  {
+   "w": "the",
+   "s": 2.6,
+   "e": 2.84
+  },
+  {
+   "w": "buyer",
+   "s": 2.84,
+   "e": 2.98
+  },
+  {
+   "w": "not",
+   "s": 2.98,
+   "e": 3.18
+  },
+  {
+   "w": "the",
+   "s": 3.18,
+   "e": 3.38
+  },
+  {
+   "w": "seller.",
+   "s": 3.38,
+   "e": 3.64
+  },
+  {
+   "w": "A",
+   "s": 4.08,
+   "e": 4.18
+  },
+  {
+   "w": "dishonest",
+   "s": 4.18,
+   "e": 4.54
+  },
+  {
+   "w": "buyer",
+   "s": 4.54,
+   "e": 4.78
+  },
+  {
+   "w": "could",
+   "s": 4.78,
+   "e": 5.0
+  },
+  {
+   "w": "still",
+   "s": 5.0,
+   "e": 5.26
+  },
+  {
+   "w": "claim",
+   "s": 5.26,
+   "e": 5.44
+  },
+  {
+   "w": "a",
+   "s": 5.44,
+   "e": 5.64
+  },
+  {
+   "w": "failure.",
+   "s": 5.64,
+   "e": 5.96
+  },
+  {
+   "w": "The",
+   "s": 6.36,
+   "e": 6.48
+  },
+  {
+   "w": "buyer",
+   "s": 6.48,
+   "e": 6.7
+  },
+  {
+   "w": "checks",
+   "s": 6.7,
+   "e": 6.98
+  },
+  {
+   "w": "every",
+   "s": 6.98,
+   "e": 7.32
+  },
+  {
+   "w": "receipt.",
+   "s": 7.32,
+   "e": 7.78
+  },
+  {
+   "w": "The",
+   "s": 8.2,
+   "e": 8.38
+  },
+  {
+   "w": "contract",
+   "s": 8.38,
+   "e": 8.66
+  },
+  {
+   "w": "only",
+   "s": 8.66,
+   "e": 8.96
+  },
+  {
+   "w": "pays",
+   "s": 8.96,
+   "e": 9.16
+  },
+  {
+   "w": "on",
+   "s": 9.16,
+   "e": 9.34
+  },
+  {
+   "w": "one",
+   "s": 9.34,
+   "e": 9.54
+  },
+  {
+   "w": "the",
+   "s": 9.54,
+   "e": 9.68
+  },
+  {
+   "w": "buyer",
+   "s": 9.68,
+   "e": 9.92
+  },
+  {
+   "w": "has",
+   "s": 9.92,
+   "e": 10.1
+  },
+  {
+   "w": "signed.",
+   "s": 10.1,
+   "e": 10.38
+  },
+  {
+   "w": "Meeted",
+   "s": 10.94,
+   "e": 11.24
+  },
+  {
+   "w": "pay,",
+   "s": 11.24,
+   "e": 11.58
+  },
+  {
+   "w": "failed",
+   "s": 12.08,
+   "e": 12.08
+  },
+  {
+   "w": "call,",
+   "s": 12.08,
+   "e": 12.56
+  },
+  {
+   "w": "deducted,",
+   "s": 12.84,
+   "e": 13.44
+  },
+  {
+   "w": "zero.",
+   "s": 13.84,
+   "e": 14.16
+  }
+ ]
+}

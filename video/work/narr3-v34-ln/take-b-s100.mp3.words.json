@@ -1,0 +1,88 @@
+{
+ "file": "paloma-b-s100.mp3",
+ "duration": 6.168,
+ "segments": [
+  {
+   "start": 0.0,
+   "end": 5.52,
+   "text": "Watch this first, a cool fails and the held money comes straight back, deducted zero."
+  }
+ ],
+ "words": [
+  {
+   "w": "Watch",
+   "s": 0.0,
+   "e": 0.42
+  },
+  {
+   "w": "this",
+   "s": 0.42,
+   "e": 0.62
+  },
+  {
+   "w": "first,",
+   "s": 0.62,
+   "e": 1.12
+  },
+  {
+   "w": "a",
+   "s": 1.52,
+   "e": 1.6
+  },
+  {
+   "w": "cool",
+   "s": 1.6,
+   "e": 1.8
+  },
+  {
+   "w": "fails",
+   "s": 1.8,
+   "e": 2.2
+  },
+  {
+   "w": "and",
+   "s": 2.2,
+   "e": 2.54
+  },
+  {
+   "w": "the",
+   "s": 2.54,
+   "e": 2.68
+  },
+  {
+   "w": "held",
+   "s": 2.68,
+   "e": 2.82
+  },
+  {
+   "w": "money",
+   "s": 2.82,
+   "e": 3.04
+  },
+  {
+   "w": "comes",
+   "s": 3.04,
+   "e": 3.3
+  },
+  {
+   "w": "straight",
+   "s": 3.3,
+   "e": 3.6
+  },
+  {
+   "w": "back,",
+   "s": 3.6,
+   "e": 4.14
+  },
+  {
+   "w": "deducted",
+   "s": 4.46,
+   "e": 5.24
+  },
+  {
+   "w": "zero.",
+   "s": 5.24,
+   "e": 5.52
+  }
+ ]
+}
